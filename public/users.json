@@ -1,0 +1,14 @@
+[
+    {
+        "email": "admin@tuk.ac.kr",
+        "name": "관리자",
+        "password": "adminpw",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+        "email": "test@example.com",
+        "name": "테스트 사용자",
+        "password": "1234",
+        "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+]

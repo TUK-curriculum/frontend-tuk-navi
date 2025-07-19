@@ -1,0 +1,16 @@
+export const periodMap = [
+    { start: '09:30', end: '10:20' },
+    { start: '10:30', end: '11:20' },
+    { start: '11:30', end: '12:20' },
+    { start: '12:30', end: '13:20' },
+    { start: '13:30', end: '14:20' },
+    { start: '14:30', end: '15:20' },
+    { start: '15:30', end: '16:20' },
+    { start: '16:30', end: '17:20' },
+    { start: '17:25', end: '18:15' },
+    { start: '18:15', end: '19:05' },
+    { start: '19:05', end: '19:55' },
+    { start: '20:00', end: '20:50' },
+    { start: '20:50', end: '21:40' },
+    { start: '21:40', end: '22:30' },
+] as const; 

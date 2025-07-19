@@ -1,0 +1,122 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/pretendard/500.css";
+@import "@fontsource/pretendard/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 로딩 상태 전환 개선 */
+* {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* 로딩 스피너 부드러운 전환 */
+.MuiCircularProgress-root {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* 페이지 전환 시 깜빡임 방지 */
+body {
+    background-color: #f8fafc;
+    transition: background-color 0.3s ease-in-out;
+}
+
+/* React 18 Concurrent Features 최적화 */
+.suspense-boundary {
+    min-height: 100vh;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Suspense fallback 애니메이션 */
+.suspense-fallback {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 스켈레톤 애니메이션 최적화 */
+.MuiSkeleton-root {
+    animation: pulse 1.5s ease-in-out 0.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* 네비게이션 버튼 최적화 */
+.nav-button {
+    transition: all 0.2s ease-in-out;
+}
+
+.nav-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* 페이지 전환 시 부드러운 애니메이션 */
+.page-transition {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Suspense 로딩 상태 개선 */
+.suspense-loading {
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+}
+
+/* 로딩 스피너 중앙 정렬 */
+.loading-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+/* 흰 화면 방지를 위한 최소 높이 */
+.min-height-screen {
+    min-height: 100vh;
+}
+
+/* Suspense 경계 스타일 */
+.suspense-boundary {
+    position: relative;
+    overflow: hidden;
+}
+
+.suspense-boundary>* {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* 로딩 중일 때 콘텐츠 숨김 */
+.suspense-loading>*:not(.loading-fallback) {
+    opacity: 0;
+    pointer-events: none;
+}

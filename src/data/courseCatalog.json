@@ -1,0 +1,308 @@
+[
+    {
+        "code": "ACS11010",
+        "name": "이산수학",
+        "credit": 3,
+        "year": 1,
+        "semester": 2,
+        "type": "전공선택",
+        "description": "컴퓨터 공학에 필요한 이산수학의 기본 개념을 다룹니다."
+    },
+    {
+        "code": "ASW10002",
+        "name": "컴퓨터과학개론",
+        "credit": 3,
+        "year": 1,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "컴퓨터과학 전반에 대한 입문 과목입니다."
+    },
+    {
+        "code": "ASW10001",
+        "name": "밀알(SW대학의이해)",
+        "credit": 1,
+        "year": 1,
+        "semester": 1,
+        "type": "자율선택",
+        "description": "SW대학 신입생을 위한 대학 적응 및 진로설계 세미나 과목입니다."
+    },
+    {
+        "code": "ACS10033",
+        "name": "창의적공학설계",
+        "credit": 3,
+        "year": 1,
+        "semester": 2,
+        "type": "전공선택",
+        "description": "공학적 문제해결 기초를 다지는 설계입문 과목입니다."
+    },
+    {
+        "code": "ACS12021",
+        "name": "프로그래밍",
+        "credit": 3,
+        "year": 1,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "C 언어 등을 활용하여 기초 프로그래밍 기법을 학습하는 과목입니다."
+    },
+    {
+        "code": "ACS23001",
+        "name": "자료구조",
+        "credit": 3,
+        "year": 2,
+        "semester": 1,
+        "type": "전공필수",
+        "description": "프로그램에서 데이터를 효율적으로 관리하기 위한 자료구조의 유형과 기본 알고리즘을 다룹니다."
+    },
+    {
+        "code": "ACS32001",
+        "name": "알고리즘",
+        "credit": 3,
+        "year": 2,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "다양한 문제를 효율적으로 해결하는 알고리즘 설계 및 분석 기법을 학습합니다."
+    },
+    {
+        "code": "ACS21001",
+        "name": "논리회로",
+        "credit": 3,
+        "year": 2,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "디지털 시스템의 기반이 되는 디지털 논리이론을 학습합니다."
+    },
+    {
+        "code": "ACS22001",
+        "name": "컴퓨터구조",
+        "credit": 3,
+        "year": 2,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "컴퓨터 하드웨어와 소프트웨어 관점에서 컴퓨터 시스템의 구성 원리를 익힙니다."
+    },
+    {
+        "code": "ACS30036",
+        "name": "UNIX 시스템프로그래밍",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "UNIX/LINUX 운영체제 환경에서의 시스템 프로그래밍 기법을 배웁니다."
+    },
+    {
+        "code": "ACS31001",
+        "name": "운영체제",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공필수",
+        "description": "컴퓨터 운영체제의 기본 원리와 설계 기법을 학습합니다."
+    },
+    {
+        "code": "ACS32002",
+        "name": "소프트웨어공학",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공필수",
+        "description": "효율적인 소프트웨어 개발을 위한 소프트웨어 공학의 개념과 방법론을 배웁니다."
+    },
+    {
+        "code": "ACS32003",
+        "name": "데이터베이스",
+        "credit": 3,
+        "year": 3,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "데이터베이스 시스템의 원리와 설계를 학습합니다."
+    },
+    {
+        "code": "ACS32023",
+        "name": "웹서비스프로그래밍",
+        "credit": 3,
+        "year": 3,
+        "semester": 2,
+        "type": "전공선택",
+        "description": "웹 어플리케이션 개발에 대한 이론과 실습을 제공합니다."
+    },
+    {
+        "code": "ACS33001",
+        "name": "컴퓨터네트워크",
+        "credit": 3,
+        "year": 3,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "컴퓨터 통신망의 구조와 프로토콜을 배우는 과목입니다."
+    },
+    {
+        "code": "ACS3B001",
+        "name": "소프트웨어보안",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "안전한 소프트웨어 개발을 위한 보안 코딩 기법을 다룹니다."
+    },
+    {
+        "code": "ACS3B002",
+        "name": "네트워크보안",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "컴퓨터 네트워크 환경의 보안 위협과 대응기술을 학습합니다."
+    },
+    {
+        "code": "ACS36023",
+        "name": "빅데이터",
+        "credit": 3,
+        "year": 4,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "데이터 공학 심화과목으로, 빅데이터의 저장, 처리 및 분석 기법을 배웁니다."
+    },
+    {
+        "code": "ACS43023",
+        "name": "소프트웨어아키텍처",
+        "credit": 3,
+        "year": 4,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "대규모 소프트웨어 시스템의 구조를 설계하는 방법을 학습합니다."
+    },
+    {
+        "code": "ACS48012",
+        "name": "HCI개론",
+        "credit": 3,
+        "year": 4,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "인간-컴퓨터 상호작용(HCI)의 기본 개념과 응용 분야를 소개합니다."
+    },
+    {
+        "code": "ACS4B004",
+        "name": "블록체인",
+        "credit": 3,
+        "year": 4,
+        "semester": 2,
+        "type": "전공선택",
+        "description": "블록체인 기술의 원리와 응용을 다루는 과목입니다."
+    },
+    {
+        "code": "ACS40051",
+        "name": "종합설계 1",
+        "credit": 2,
+        "year": 4,
+        "semester": 1,
+        "type": "전공필수",
+        "description": "캡스톤디자인 프로젝트 1단계 과목입니다."
+    },
+    {
+        "code": "ACS40053",
+        "name": "종합설계 2",
+        "credit": 1,
+        "year": 4,
+        "semester": 2,
+        "type": "전공필수",
+        "description": "캡스톤디자인 프로젝트 2단계 과목입니다."
+    },
+    {
+        "code": "ACS3???",
+        "name": "인공지능",
+        "credit": 3,
+        "year": 3,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "컴퓨터를 이용해 인간과 유사한 지능적 작업을 수행하는 기법들을 배웁니다."
+    },
+    {
+        "code": "ACS35004",
+        "name": "AI이노베이션",
+        "credit": 3,
+        "year": 3,
+        "semester": 2,
+        "type": "전공선택",
+        "description": "강화학습(Reinforcement Learning)을 중심으로 인공지능의 혁신적 기법을 학습합니다."
+    },
+    {
+        "code": "ACS48011",
+        "name": "생성형AI",
+        "credit": 3,
+        "year": 4,
+        "semester": 1,
+        "type": "전공선택",
+        "description": "최근 각광받는 생성 인공지능(Generative AI) 기술을 다루는 과목입니다."
+    },
+    {
+        "code": "GENERAL001",
+        "name": "가치와비전",
+        "credit": 1,
+        "year": 1,
+        "semester": 1,
+        "type": "교양필수",
+        "description": "대학 신입생을 위한 인성 및 진로탐색 교과목입니다."
+    },
+    {
+        "code": "GENERAL002",
+        "name": "대학영어",
+        "credit": 2,
+        "year": 1,
+        "semester": 1,
+        "type": "교양선택",
+        "description": "실용영어 능력을 함양하기 위한 기본 교양영어 과목입니다."
+    },
+    {
+        "code": "GENERAL003",
+        "name": "글쓰기",
+        "credit": 2,
+        "year": 1,
+        "semester": 1,
+        "type": "교양필수",
+        "description": "논리적 글쓰기 능력 향상을 위한 교양 과목입니다."
+    },
+    {
+        "code": "GENERAL004",
+        "name": "영어쓰기",
+        "credit": 2,
+        "year": 1,
+        "semester": 2,
+        "type": "교양필수",
+        "description": "글로벌 시대에 필요한 영어 작문 능력을 기르는 과목입니다."
+    },
+    {
+        "code": "BASIC001",
+        "name": "대학수학 I",
+        "credit": 3,
+        "year": 1,
+        "semester": 1,
+        "type": "계열기초",
+        "description": "공학전공 학습의 토대가 되는 미적분학의 기본 원리를 배웁니다."
+    },
+    {
+        "code": "BASIC002",
+        "name": "대학수학 II",
+        "credit": 3,
+        "year": 1,
+        "semester": 2,
+        "type": "교양필수",
+        "description": "다변수 함수의 미분·적분과 벡터 해석을 배우는 미적분학 후속 과목입니다."
+    },
+    {
+        "code": "BASIC003",
+        "name": "일반물리학 I",
+        "credit": 3,
+        "year": 1,
+        "semester": 1,
+        "type": "계열기초",
+        "description": "공학도의 기초 소양인 물리학(역학) 기초를 배우는 과목입니다."
+    },
+    {
+        "code": "BASIC004",
+        "name": "일반물리학 II",
+        "credit": 3,
+        "year": 1,
+        "semester": 2,
+        "type": "계열기초",
+        "description": "전자기학 및 현대물리의 기본을 다루는 과목입니다."
+    }
+]
