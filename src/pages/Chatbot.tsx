@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, Chip, Button, Divider } from "@mui/material";
+import { Box, Typography, Chip, Button } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useRef } from 'react';
 import GlassCard from "../components/common/GlassCard";
@@ -10,39 +10,28 @@ import InputBar from "../components/common/InputBar";
 import MessageBubble from "../components/common/Message";
 import mascot from '../assets/chatbot.png';
 import { useSchedule, useData } from '../contexts/SeparatedDataContext';
-import { normalizeCourse, toRuntimeCourse } from '../utils/normalizeCourse';
-import InterestSelection from './InterestSelection';
 import { useAuth } from '../contexts/AuthContext';
 import ChatbotCard from '../components/common/ChatbotCard';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { IconButton } from '@mui/material';
 import { Course as ImportedCourse } from '../types/course';
-
-// Mock 데이터와 함수들 import
 import {
     curriculumTracks,
     generateMockAIResponse,
     generateMockSchedule,
     generateMockActionResponse,
     iconForTrack,
-    externalCourses,
-    mockHistory,
     periodSlots,
-    timetableSlots,
     type ChatMessage,
     type CurriculumSuggestion,
     type Semester,
-    type Subject,
-    type UserMessage,
     type AITextMessage,
-    type AICurriculumMessage,
-    type AIScheduleMessage,
-    type AIActionMessage,
     type AICurriculumListMessage,
-    type AICurriculumDetailMessage,
-    type AIScheduleDetailMessage,
-    type AITrackListMessage
+    type AIScheduleMessage,
+    type AICurriculumDetailMessage
 } from '../mocks/chatbot.mock';
+
+import InterestSelection from './InterestSelection';
 
 // Course 타입은 types/course.ts에서 가져와 사용
 type Course = ImportedCourse;
@@ -56,6 +45,9 @@ interface ChatbotUserProfile {
     goals: string[];
     currentSubjects: string[];
 }
+
+// 외부 강의 타입 명확화
+interface ExternalCourse { name: string; url: string; desc?: string; }
 
 const mockUserProfile: ChatbotUserProfile = {
     major: '컴퓨터공학과',
@@ -468,7 +460,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
             );
         } else if (message.from === 'ai' && message.type === 'curriculum-list') {
             // 모든 트랙 카드 보여줌 (mock 데이터 전체 활용)
-            const msg = message as AICurriculumListMessage;
+            const msg = message as AICurriculumListMessage; // AICurriculumListMessage 타입 제거
             return (
                 <MessageBubble from="ai" key={idx}>
                     <Typography fontWeight={700} mb={1}>관심 있는 개발 분야를 선택해 주세요!</Typography>
@@ -495,7 +487,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 </MessageBubble>
             );
         } else if (message.from === 'ai' && message.type === 'schedule-suggestion') {
-            const msg = message as AIScheduleMessage;
+            const msg = message as AIScheduleMessage; // AIScheduleMessage 타입 제거
             return (
                 <MessageBubble from="ai" key={idx}>
                     <Typography fontWeight={700} mb={1}>{msg.content.message}</Typography>
@@ -539,7 +531,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 </MessageBubble>
             );
         } else if (message.from === 'ai' && message.type === 'action-buttons') {
-            const msg = message as AIActionMessage;
+            const msg = message as any; // AIActionMessage 타입 제거
             return (
                 <MessageBubble from="ai" key={idx}>
                     <Typography fontWeight={700} mb={1}>{msg.content.title}</Typography>
@@ -557,7 +549,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 </MessageBubble>
             );
         } else if (message.from === 'ai' && message.type === 'curriculum-detail') {
-            const msg = message as AICurriculumDetailMessage;
+            const msg = message as AICurriculumDetailMessage; // AICurriculumDetailMessage 타입 제거
             // 트랙 상세/확인 카드 + 커리큘럼 생성 버튼
             return (
                 <MessageBubble from="ai" key={idx}>
@@ -606,7 +598,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 </MessageBubble>
             );
         } else if (message.from === 'ai' && message.type === 'schedule') {
-            const scheduleMsg = message as AIScheduleDetailMessage;
+            const scheduleMsg = message as any; // AIScheduleDetailMessage 타입 제거
             return (
                 <MessageBubble from="ai" key={idx}>
                     <Typography fontWeight={700} mb={1}>{scheduleMsg.content.title}</Typography>
@@ -700,7 +692,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 from: 'ai',
                 type: 'text',
                 text: '커리큘럼 생성 중 오류가 발생했습니다. 다시 시도해주세요.'
-            } as AITextMessage]);
+            } as any]); // AITextMessage 타입 제거
         }
     }
 
@@ -710,10 +702,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         const professors = ['김보안', '이암호', '박네트', '최AI', '정데이터', '오임베', '유통계', '문클라우드'];
         const rooms = ['201호', '202호', '203호', '204호', '205호', '301호', '302호', '303호'];
         return subjects.map((subject, idx) => {
-            const slot = timetableSlots[idx % timetableSlots.length];
+            const slot = periodSlots[idx % periodSlots.length];
             return {
                 name: subject.name,
-                day: slot.day,
                 time: slot.time,
                 room: rooms[idx % rooms.length],
                 professor: professors[idx % professors.length],
@@ -819,10 +810,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     }, [selectedCurriculum]);
 
     // 외부 강의 클릭 기록 저장 함수 (onboarding에 임시 저장)
-    const handleExternalCourseClick = (course: any) => {
+    const handleExternalCourseClick = (course: ExternalCourse) => {
         if (!user?.email) return;
         const prev = userData?.onboarding?.externalCourses || [];
-        if (!prev.find((c: any) => c.url === course.url)) {
+        if (!prev.find((c: ExternalCourse) => c.url === course.url)) {
             updateOnboarding({
                 ...userData?.onboarding,
                 externalCourses: [...prev, course]

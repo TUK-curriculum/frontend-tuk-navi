@@ -58,7 +58,6 @@ const Schedule = lazy(() => import('./pages/Schedule'));
 const CourseDetail = lazy(() => import('./pages/CourseDetail'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const SecurityTest = lazy(() => import('./pages/SecurityTest'));
-const TestPage = lazy(() => import('./pages/TestPage'));
 const CompletedCourses = lazy(() => import('./pages/CompletedCourses'));
 const CourseSetup = lazy(() => import('./pages/CourseSetup'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
@@ -456,11 +455,6 @@ function AppContent() {
             <Route path="/security-test" element={
               <ProtectedRoute>
                 <SecurityTest />
-              </ProtectedRoute>
-            } />
-            <Route path="/test" element={
-              <ProtectedRoute>
-                <TestPage />
               </ProtectedRoute>
             } />
             <Route path="/completed-courses" element={

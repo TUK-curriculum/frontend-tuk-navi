@@ -11,7 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/SeparatedDataContext';
-import { TOPBAR_HEIGHT } from '../components/TopBar';
 import mascotBg from '../assets/dashboard.png';
 import { diagnoseGraduation } from '../data/graduationRequirements';
 import PersonIcon from '@mui/icons-material/Person';
@@ -372,8 +371,8 @@ const Dashboard: React.FC = () => {
     if (error || dataError) {
         return (
             <Box sx={{
-                pt: `${TOPBAR_HEIGHT}px`,
-                minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+                pt: 0,
+                minHeight: `calc(100vh - 0px)`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -402,8 +401,8 @@ const Dashboard: React.FC = () => {
     if (isLoading || contentLoading) {
         return (
             <Box sx={{
-                pt: `${TOPBAR_HEIGHT}px`,
-                minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+                pt: 0,
+                minHeight: `calc(100vh - 0px)`,
                 background: 'linear-gradient(135deg, #e0f2ff 0%, #f3e8ff 100%)',
                 px: { xs: 2, md: 6 },
                 py: { xs: 4, md: 6 }
@@ -467,8 +466,8 @@ const Dashboard: React.FC = () => {
 
     return (
         <Box sx={{
-            pt: `${TOPBAR_HEIGHT}px`,
-            minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+            pt: 0,
+            minHeight: `calc(100vh - 0px)`,
             background: 'linear-gradient(135deg, #e0f2ff 0%, #f3e8ff 100%)',
             position: 'relative',
             overflow: 'hidden',

@@ -64,7 +64,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { TOPBAR_HEIGHT } from '../components/TopBar';
+// import { TOPBAR_HEIGHT } from '../App'; // 삭제
 import { styled } from '@mui/system';
 import { curriculumService } from '../services/CurriculumService';
 import {
@@ -859,7 +859,7 @@ const CurriculumPage: React.FC = () => {
     // Loading state
     if (loading) {
         return (
-            <Box sx={{ pt: `${TOPBAR_HEIGHT}px`, minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`, bgcolor: 'background.default', px: 2 }}>
+            <Box sx={{ pt: '64px', minHeight: `calc(100vh - 64px)`, bgcolor: 'background.default', px: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 3 }}>
                     <Skeleton variant="circular" width={80} height={80} />
                     <Box>
@@ -906,8 +906,8 @@ const CurriculumPage: React.FC = () => {
     return (
         <Box
             sx={{
-                pt: `${TOPBAR_HEIGHT}px`,
-                minHeight: `calc(100vh - ${TOPBAR_HEIGHT}px)`,
+                pt: '64px',
+                minHeight: `calc(100vh - 64px)`,
                 bgcolor: 'background.default',
                 pb: 6,
             }}
