@@ -834,17 +834,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     return (
         <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
             {/* 디버깅 정보 (개발 환경에서만 표시) */}
-            {process.env.NODE_ENV === 'development' && (
-                <Box sx={{ p: 2, bgcolor: '#fee2e2', borderBottom: '1px solid #fecaca' }}>
-                    <Typography variant="body2" color="error">
-                        🔍 디버깅 정보:
-                        사용자={user?.email ? '있음' : '없음'} |
-                        온보딩정보={userData?.onboarding ? '있음' : '없음'} |
-                        기본정보={userData?.onboarding?.name || userData?.onboarding?.department || userData?.onboarding?.interests?.length > 0 ? '있음' : '없음'} |
-                        메시지수={history.length}
-                    </Typography>
-                </Box>
-            )}
+
 
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <Box
@@ -852,7 +842,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         width: '100%',
                         maxWidth: 1200,
                         height: '80vh',
-                        minHeight: 500,
+                        minHeight: 750,
                         background: '#fff',
                         borderRadius: 4,
                         boxShadow: '0 8px 32px 0 rgba(80,110,240,0.08)',
@@ -860,7 +850,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         flexDirection: 'column',
                         overflow: 'hidden',
                         position: 'relative',
-                        margin: '0 auto',
+                        margin: '55px auto 0 auto', // 상단에 40px 여백 추가
                     }}
                 >
                     {/* 상단 바 - 서비스스러운 디자인 */}
