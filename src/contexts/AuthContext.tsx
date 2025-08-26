@@ -8,7 +8,7 @@ import { UserProfile } from '../types/user';
 
 interface User {
     id: string;
-    userId: string; // DB와 일치하는 userId
+    userId: string;
     name: string;
     email: string;
     profile?: UserProfile;
@@ -60,10 +60,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const { userRepository } = await import('../repositories/UserRepository');
 
             try {
-                console.log('📡 [AuthContext] Fetching profile from backend...');
+                console.log('[AuthContext] Fetching profile from backend...');
                 const profileData = await userRepository.getProfile();
 
-                console.log('✅ [AuthContext] Profile fetched from backend:', profileData);
+                console.log('[AuthContext] Profile fetched from backend:', profileData);
 
                 // Custom event로 실제 프로필 정보 전달
                 window.dispatchEvent(new CustomEvent('updateUserProfile', {
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 }));
 
             } catch (profileError) {
-                console.error('❌ [AuthContext] Failed to fetch profile from backend:', profileError);
+                console.error('[AuthContext] Failed to fetch profile from backend:', profileError);
 
                 // 백엔드 조회 실패 시 로그인 응답에서 받은 정보로 fallback
                 if (userInfo && typeof window !== 'undefined') {
@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         avatar: userInfo.avatar || ''
                     };
 
-                    console.log('📝 [AuthContext] Using fallback profile data:', fallbackProfileData);
+                    console.log('[AuthContext] Using fallback profile data:', fallbackProfileData);
 
                     window.dispatchEvent(new CustomEvent('updateUserProfile', {
                         detail: fallbackProfileData
@@ -160,13 +160,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, []);
 
     const login = async (email: string, password: string) => {
-        console.log('🔐 [AuthContext] Starting login for:', email);
+        console.log('[AuthContext] Starting login for:', email);
         setIsLoading(true);
         try {
             const credentials: LoginDTO = { email, password };
-            console.log('📝 [AuthContext] Calling authRepository.login');
+            console.log('[AuthContext] Calling authRepository.login');
             const response = await authRepository.login(credentials);
-            console.log('✅ [AuthContext] Login response received:', {
+            console.log('[AuthContext] Login response received:', {
                 hasAccessToken: !!response.accessToken,
                 hasRefreshToken: !!response.refreshToken,
                 userId: response.user?.userId
@@ -191,16 +191,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 email: email,
                 profile: response.user
             };
-            console.log('👤 [AuthContext] Setting user:', { id: user.id, name: user.name, email: user.email });
+            console.log('[AuthContext] Setting user:', { id: user.id, name: user.name, email: user.email });
             setUser(user);
 
             await initializeUserDataForAuth(email, response.user);
 
             // 새로운 사용자 로그인 후 혹시 모를 캐시 정리 (safety)
             apiService.clearProfileCache(email);
-            console.log('🎉 [AuthContext] Login complete successfully');
+            console.log('[AuthContext] Login complete successfully');
         } catch (error) {
-            console.error('❌ [AuthContext] Login failed:', error);
+            console.error('[AuthContext] Login failed:', error);
             throw error;
         } finally {
             setIsLoading(false);
@@ -208,7 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     const register = async (name: string, email: string, password: string, studentId?: string, major?: string, grade?: string | number, phone?: string, interests?: string[]) => {
-        console.log('🚀 [AuthContext] Starting register for:', email);
+        console.log('[AuthContext] Starting register for:', email);
         setIsLoading(true);
         try {
             // grade가 이미 숫자인 경우와 문자열인 경우를 모두 처리
@@ -231,9 +231,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 interests: interests || [],
             };
 
-            console.log('📝 [AuthContext] Calling authRepository.register');
+            console.log('[AuthContext] Calling authRepository.register');
             const response = await authRepository.register(dto);
-            console.log('✅ [AuthContext] Register response received:', {
+            console.log('[AuthContext] Register response received:', {
                 hasAccessToken: !!response.accessToken,
                 hasRefreshToken: !!response.refreshToken,
                 userId: response.user?.userId
@@ -245,9 +245,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.removeItem('userEmail');
             setUser(null);
 
-            console.log('✅ [AuthContext] Register completed successfully (no auto-login)');
+            console.log('[AuthContext] Register completed successfully (no auto-login)');
         } catch (error) {
-            console.error('❌ [AuthContext] Registration failed:', error);
+            console.error('[AuthContext] Registration failed:', error);
             throw error;
         } finally {
             setIsLoading(false);

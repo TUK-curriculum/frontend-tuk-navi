@@ -228,7 +228,7 @@ const SecurityTest: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                     <Security sx={{ fontSize: 32, color: '#0ea5e9' }} />
                     <Typography variant="h4" fontWeight={800} sx={{ color: '#0ea5e9' }}>
-                        🔒 보안 테스트 페이지
+                        보안 테스트 페이지
                     </Typography>
                 </Box>
 
@@ -241,7 +241,7 @@ const SecurityTest: React.FC = () => {
                         <Card sx={{ borderRadius: 2 }}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                                    🔗 API 연결 테스트
+                                    API 연결 테스트
                                 </Typography>
                                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                                     <Button
@@ -304,7 +304,7 @@ const SecurityTest: React.FC = () => {
                 {securityResults.length > 0 && (
                     <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#162B49' }}>
-                            📊 보안 테스트 결과
+                            보안 테스트 결과
                         </Typography>
 
                         <Grid container spacing={2}>
@@ -336,7 +336,7 @@ const SecurityTest: React.FC = () => {
                                             {result.recommendations && result.recommendations.length > 0 && (
                                                 <Box>
                                                     <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                                                        💡 권장사항:
+                                                         권장사항:
                                                     </Typography>
                                                     <List dense>
                                                         {result.recommendations.map((rec, idx) => (
@@ -365,7 +365,7 @@ const SecurityTest: React.FC = () => {
 
                 <Box sx={{ mt: 3, p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
                     <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                        📊 현재 정보
+                        현재 정보
                     </Typography>
                     <Grid container spacing={2}>
                         <Grid item xs={12} md={6}>

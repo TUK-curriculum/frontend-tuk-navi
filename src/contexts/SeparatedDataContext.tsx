@@ -286,7 +286,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
             try {
                 timer = setTimeout(() => setIsLoading(true), 100);
 
-                console.log(`🔄 사용자 ${currentUserEmail}의 분리된 데이터 로드 시작`);
+                console.log(`사용자 ${currentUserEmail}의 분리된 데이터 로드 시작`);
 
                 // 기존 데이터 마이그레이션 확인 및 실행
                 checkAndMigrateLegacyUserData(currentUserEmail);
@@ -314,9 +314,9 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                     userTimetable = timetableResult.status === 'fulfilled' ? timetableResult.value : null;
                     userRecords = recordsResult.status === 'fulfilled' ? recordsResult.value : [];
 
-                    console.log('✅ [SeparatedDataContext] Backend data loaded successfully');
+                    console.log('[SeparatedDataContext] Backend data loaded successfully');
                 } catch (backendError) {
-                    console.warn('⚠️ [SeparatedDataContext] Backend data loading failed, falling back to localStorage:', backendError);
+                    console.warn('[SeparatedDataContext] Backend data loading failed, falling back to localStorage:', backendError);
 
                     // 백엔드 실패 시 localStorage fallback
                     userProfile = getUserProfile(currentUserEmail);
@@ -360,7 +360,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 // 로그인 통계 업데이트
                 updateLoginStatistics(currentUserEmail);
 
-                console.log(`✅ 사용자 ${currentUserEmail}의 분리된 데이터 로드 완료`);
+                console.log(`사용자 ${currentUserEmail}의 분리된 데이터 로드 완료`);
                 setError(null);
 
             } catch (error) {
@@ -377,7 +377,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         // AuthContext에서 프로필 업데이트 이벤트 리스너
         const handleProfileUpdate = (event: CustomEvent) => {
             if (currentUserEmail && currentUserId) {
-                console.log('🔄 [SeparatedDataContext] Received profile update event:', event.detail);
+                console.log('[SeparatedDataContext] Received profile update event:', event.detail);
                 // 직접 updateUserProfile 함수 호출
                 const updated = updateUserProfile(currentUserId, event.detail);
                 setProfile(updated);
@@ -458,14 +458,14 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
 
                 try {
                     await userRepository.updateProfile(backendUpdates);
-                    console.log('✅ [SeparatedDataContext] Profile synced to backend');
+                    console.log('[SeparatedDataContext] Profile synced to backend');
                 } catch (error) {
-                    console.warn('⚠️ [SeparatedDataContext] Failed to sync profile to backend:', error);
+                    console.warn('[SeparatedDataContext] Failed to sync profile to backend:', error);
                     // 백엔드 업데이트 실패해도 로컬 상태는 유지
                 }
             }
         } catch (error) {
-            console.error('❌ [SeparatedDataContext] Failed to update profile:', error);
+            console.error('[SeparatedDataContext] Failed to update profile:', error);
         }
     }, [currentUserId]);
 
@@ -842,7 +842,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         updatedAt: new Date().toISOString()
     };
 
-    // 🚀 Aggregated legacy-friendly userData object (keeps older components working)
+    // Aggregated legacy-friendly userData object (keeps older components working)
     const aggregatedUserData = {
         profile: defaultProfile,
         graduationInfo: defaultGraduationInfo,

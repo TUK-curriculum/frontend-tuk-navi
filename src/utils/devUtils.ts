@@ -4,7 +4,7 @@ import { periodMap } from '../data/periodMap';
 
 // 데이터 초기화
 const resetData = async () => {
-    console.warn('🗑️ 모든 데이터를 초기화합니다...');
+    console.warn('모든 데이터를 초기화합니다...');
     const userId = getCurrentUserId();
     if (!userId) {
         console.log('로그인된 사용자가 없습니다.');
@@ -19,7 +19,7 @@ const resetData = async () => {
 
     deleteUserData(userId);
     initializeUserData(userId);
-    console.log('✅ 데이터 초기화 완료! 페이지를 새로고침하세요.');
+    console.log('데이터 초기화 완료! 페이지를 새로고침하세요.');
 };
 
 // 개발자 도구에서 사용할 수 있는 전역 함수들
@@ -50,7 +50,7 @@ const addSampleCompletedCourse = async () => {
         return;
     }
 
-    console.log('📚 샘플 이수과목 추가는 새로운 구조에서는 직접 데이터를 추가해야 합니다.');
+    console.log('샘플 이수과목 추가는 새로운 구조에서는 직접 데이터를 추가해야 합니다.');
     console.log('사용 예시: 페이지에서 직접 과목을 추가하거나, 개발자 도구에서 데이터를 직접 조작하세요.');
 };
 
@@ -62,7 +62,7 @@ const addSampleTimetableCourse = async () => {
         return;
     }
 
-    console.log('📅 샘플 시간표 과목 추가는 새로운 구조에서는 직접 데이터를 추가해야 합니다.');
+    console.log('샘플 시간표 과목 추가는 새로운 구조에서는 직접 데이터를 추가해야 합니다.');
     console.log('사용 예시: 시간표 페이지에서 직접 과목을 추가하세요.');
 };
 
@@ -74,7 +74,7 @@ const showAllData = () => {
         return;
     }
 
-    console.log('📊 현재 사용자의 모든 데이터:');
+    console.log('현재 사용자의 모든 데이터:');
     const allData = exportUserData(userId);
     console.log(JSON.parse(allData));
 };
@@ -82,7 +82,7 @@ const showAllData = () => {
 // 계정 전환 테스트
 const testAccountSwitch = () => {
     console.warn('testAccountSwitch: 향후 useData 기반으로 변경될 예정입니다.');
-    console.log('🔄 계정 전환 테스트 시작...');
+    console.log('계정 전환 테스트 시작...');
 
     // 테스트 계정들
     const testAccounts = [
@@ -110,7 +110,7 @@ const testAccountSwitch = () => {
         console.warn('localStorage 직접 접근은 더 이상 사용되지 않습니다. useData를 사용하세요.');
     });
 
-    console.log('✅ 테스트 계정 데이터 생성 완료');
+    console.log('테스트 계정 데이터 생성 완료');
     console.log('테스트 계정들:', testAccounts.map(acc => acc.email));
     console.log('사용법: useAuth를 통해 계정 전환 후 페이지 새로고침');
 };
@@ -126,9 +126,9 @@ const checkUserDataStatus = () => {
 
     // 마이그레이션 필요 여부 확인
     if (isMigrationRequired()) {
-        console.log('❗ 마이그레이션이 필요한 기존 데이터가 있습니다.');
+        console.log('마이그레이션이 필요한 기존 데이터가 있습니다.');
     } else {
-        console.log('✅ 모든 데이터가 새로운 분리 구조로 저장되어 있습니다.');
+        console.log('모든 데이터가 새로운 분리 구조로 저장되어 있습니다.');
     }
 
     // 현재 사용자의 데이터 구조 비교
@@ -139,24 +139,24 @@ const checkUserDataStatus = () => {
 // 로그인 시뮬레이션
 const simulateLogin = (email: string) => {
     console.warn('simulateLogin: 향후 useAuth 기반으로 변경될 예정입니다.');
-    console.log(`🔑 로그인 시뮬레이션: ${email}`);
+    console.log(`로그인 시뮬레이션: ${email}`);
     // useAuth를 통해 로그인하도록 변경 예정
     console.warn('localStorage 직접 접근은 더 이상 사용되지 않습니다. useAuth를 사용하세요.');
-    console.log('✅ 로그인 완료. 페이지를 새로고침하세요.');
+    console.log('로그인 완료. 페이지를 새로고침하세요.');
 };
 
 // 로그아웃 시뮬레이션
 const simulateLogout = () => {
     console.warn('simulateLogout: 향후 useAuth 기반으로 변경될 예정입니다.');
-    console.log('🔒 로그아웃 시뮬레이션');
+    console.log('로그아웃 시뮬레이션');
     // useAuth를 통해 로그아웃하도록 변경 예정
     console.warn('localStorage 직접 접근은 더 이상 사용되지 않습니다. useAuth를 사용하세요.');
-    console.log('✅ 로그아웃 완료. 페이지를 새로고침하세요.');
+    console.log('로그아웃 완료. 페이지를 새로고침하세요.');
 };
 
 // 시간표 렌더링 테스트
 const testTimetableRendering = () => {
-    console.log('📅 시간표 렌더링 테스트 시작...');
+    console.log('시간표 렌더링 테스트 시작...');
 
     // 테스트 데이터 생성
     const testCourses = [
@@ -183,7 +183,7 @@ const testTimetableRendering = () => {
         });
     });
 
-    console.log('✅ 시간표 렌더링 테스트 완료');
+    console.log('시간표 렌더링 테스트 완료');
 };
 
 function mergePeriods(startP: number, endP: number) {
@@ -216,7 +216,7 @@ export function setupDevTools() {
             }
         };
 
-        console.log('🛠️ TUK-NAVI 개발자 도구가 활성화되었습니다.');
+        console.log('TUK-NAVI 개발자 도구가 활성화되었습니다.');
         console.log('사용 가능한 명령어: window.TUK_NAVI_DEV');
         console.log('데이터 구조 비교: window.TUK_NAVI_DEV.compareDataStructures("user@email.com")');
         console.log('데이터 내보내기: window.TUK_NAVI_DEV.exportUserData("user@email.com")');

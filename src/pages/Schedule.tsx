@@ -293,12 +293,12 @@ const Schedule: React.FC = () => {
                 showSnackbar('시간표가 백엔드와 동기화되었습니다.', 'info');
             } else {
                 // 백엔드에 데이터가 없는 경우 (새 사용자 등)
-                console.log('📝 [Schedule] No backend timetable found, using local data');
+                console.log('[Schedule] No backend timetable found, using local data');
             }
 
             setLastSyncTime(new Date());
         } catch (error) {
-            console.warn('⚠️ [Schedule] Sync failed, using local data:', error);
+            console.warn('[Schedule] Sync failed, using local data:', error);
             // 에러가 발생해도 로컬 데이터를 사용하도록 함
         } finally {
             setIsDataSyncing(false);
@@ -574,7 +574,7 @@ const Schedule: React.FC = () => {
             {!isOnline && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, p: 1, bgcolor: 'warning.light', borderRadius: 1 }}>
                     <Typography variant="body2" color="warning.contrastText">
-                        ⚠️ 오프라인 모드 - 변경사항은 로컬에 저장됩니다
+                        오프라인 모드 - 변경사항은 로컬에 저장됩니다
                     </Typography>
                 </Box>
             )}
@@ -583,7 +583,7 @@ const Schedule: React.FC = () => {
             {offlineChanges.length > 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, p: 1, bgcolor: 'warning.light', borderRadius: 1 }}>
                     <Typography variant="body2" color="warning.contrastText">
-                        📝 {offlineChanges.length}개의 오프라인 변경사항이 대기 중입니다
+                        {offlineChanges.length}개의 오프라인 변경사항이 대기 중입니다
                     </Typography>
                 </Box>
             )}

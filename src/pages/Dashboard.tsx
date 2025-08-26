@@ -1168,7 +1168,7 @@ const Dashboard: React.FC = () => {
                                                                                         letterSpacing: '-0.01em'
                                                                                     }}
                                                                                 >
-                                                                                    🎯 관심 분야
+                                                                                    관심 분야
                                                                                 </Typography>
                                                                                 <Box sx={{
                                                                                     width: 3,
@@ -1283,7 +1283,7 @@ const Dashboard: React.FC = () => {
                                                                 fontWeight: 900
                                                             }}
                                                         >
-                                                            🚀 AI 추천 커리큘럼
+                                                            AI 추천 커리큘럼
                                                         </Typography>
                                                     </Box>
 

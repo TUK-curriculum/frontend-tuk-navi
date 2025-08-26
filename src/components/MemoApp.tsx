@@ -170,21 +170,21 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         const updateData = { title: currentTitle, content: currentContent };
 
         // 디버깅용 로그 추가
-        console.log('🟦 editor:', editor);
-        console.log('🟦 editor.getHTML:', editor?.getHTML());
-        console.log('🟦 editTitle:', editTitle);
-        console.log('🟦 editContent:', editContent);
-        console.log('🟦 updateData:', updateData);
+        console.log('editor:', editor);
+        console.log('editor.getHTML:', editor?.getHTML());
+        console.log('editTitle:', editTitle);
+        console.log('editContent:', editContent);
+        console.log('updateData:', updateData);
 
         // ② 디버깅 로그
-        console.log('🔍 [handleSave] 시작:', {
+        console.log('[handleSave] 시작:', {
             selectedId,
             currentTitle,
             currentContent: currentContent.slice(0, 100) + '…'
         });
 
         try {
-            console.log('📤 [handleSave] 전송 데이터:', updateData);
+            console.log('[handleSave] 전송 데이터:', updateData);
 
             await handleUpdateMemo(selectedId.toString(), updateData);
             // handleUpdateMemo는 내부적으로 showSnackbar 호출함
@@ -193,13 +193,13 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
             setEditing(false);
             setTimeout(() => setSaved(false), 1200);
             showSnackbar('메모가 저장되었습니다!', 'success');
-            console.log('📊 [handleSave] memos 상태:', memos.map(n => ({
+            console.log('[handleSave] memos 상태:', memos.map(n => ({
                 id: n.id,
                 title: n.title,
                 content: n.content.slice(0, 50) + '…'
             })));
         } catch (err) {
-            console.error('❌ [handleSave] 오류:', err);
+            console.error('[handleSave] 오류:', err);
             showSnackbar('저장 중 오류가 발생했습니다.', 'error');
         }
     }, [selectedId, editTitle, editContent, editor, handleUpdateMemo, memos, showSnackbar]);
@@ -265,7 +265,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     // TipTap 에디터 동기화 개선
     useEffect(() => {
         if (editor && editContent !== editor.getHTML()) {
-            console.log('🔄 [에디터동기화] 기존→새:', {
+            console.log('[에디터동기화] 기존→새:', {
                 old: editor.getHTML().slice(0, 50) + '…',
                 new: editContent.slice(0, 50) + '…'
             });
@@ -589,7 +589,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                                     value={editTitle}
                                     onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
                                         const val = e.target.value;
-                                        console.log('📝 [타이틀변경]', val);
+                                        console.log('[타이틀변경]', val);
                                         setEditTitle(val);
                                         setEditing(true);
                                         setSaved(false);

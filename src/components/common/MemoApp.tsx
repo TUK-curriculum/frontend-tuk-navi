@@ -192,7 +192,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 - 시간: 
 - 참석자: 
 
-## 📋 안건
+## 안건
 1. 
 2. 
 3. 
@@ -200,10 +200,10 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 ## 💬 논의 내용
 - 
 
-## ✅ 결정사항
+## 결정사항
 - 
 
-## 📝 다음 액션 아이템
+## 다음 액션 아이템
 - [ ] 
 - [ ] 
 - [ ] 
@@ -217,7 +217,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
             name: '프로젝트 계획',
             content: `# 프로젝트 계획
 
-## 🎯 프로젝트 목표
+## 프로젝트 목표
 - 
 
 ## 📅 일정
@@ -230,7 +230,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 - 개발자: 
 - 디자이너: 
 
-## 📋 주요 작업
+## 주요 작업
 - [ ] 
 - [ ] 
 - [ ] 
@@ -238,10 +238,10 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 ## 💰 예산
 - 
 
-## ⚠️ 리스크
+## 리스크
 - 
 
-## 📊 진행률
+## 진행률
 - 현재: 0%
 - 목표: 100%`
         },
@@ -251,12 +251,12 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 
 ## 📅 ${new Date().toLocaleDateString('ko-KR')}
 
-## 🎯 오늘의 목표
+## 오늘의 목표
 - [ ] 
 - [ ] 
 - [ ] 
 
-## 📝 할 일
+## 할 일
 - [ ] 
 - [ ] 
 - [ ] 
@@ -275,7 +275,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 - 점심: 
 - 저녁: 
 
-## 📊 하루 요약
+## 하루 요약
 - 성취도: 
 - 만족도: 
 - 개선점: `
@@ -290,7 +290,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 ## 📅 학습 날짜
 - 
 
-## 🎯 학습 목표
+## 학습 목표
 - 
 
 ## 📖 주요 내용
@@ -303,19 +303,19 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
 ### 3. 
 - 
 
-## 💡 핵심 개념
+## 핵심 개념
 - 
 
-## ❓ 질문사항
+## 질문사항
 - 
 
-## 📝 과제/프로젝트
+## 과제/프로젝트
 - 
 
-## 🔗 참고 자료
+## 참고 자료
 - 
 
-## 📊 이해도
+## 이해도
 - 현재: 
 - 목표: `
         }
@@ -528,7 +528,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
             return;
         }
         if (typeof addNote !== 'function') {
-            console.error('❌ [MemoApp] addNote가 함수가 아님:', addNote);
+            console.error('[MemoApp] addNote가 함수가 아님:', addNote);
             return;
         }
         try {
@@ -1025,7 +1025,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                                         <Button
                                             fullWidth
                                             onClick={() => {
-                                                console.log('🔍 [MemoApp] 새 메모 버튼 클릭됨');
+                                                console.log('[MemoApp] 새 메모 버튼 클릭됨');
                                                 handleAdd();
                                             }}
                                             disabled={!isDataReady}
@@ -1381,7 +1381,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                     fullWidth
                 >
                     <DialogTitle sx={{ fontWeight: 700 }}>
-                        📤 메모 공유
+                        메모 공유
                     </DialogTitle>
                     <DialogContent>
                         {shareMemo && (
