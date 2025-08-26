@@ -364,9 +364,9 @@ export default function InterestSelection({
                 const { apiService } = await import('../services/ApiService');
                 const profile = await apiService.getProfile();
 
-                console.log('✅ [InterestSelection] Profile loaded from backend:', profile);
-                console.log('🔍 [InterestSelection] Current user data:', user);
-                console.log('🔍 [InterestSelection] User profile details:', user?.profile);
+                console.log('[InterestSelection] Profile loaded from backend:', profile);
+                console.log('[InterestSelection] Current user data:', user);
+                console.log('[InterestSelection] User profile details:', user?.profile);
 
                 // Register.tsx에서 사용하는 grade 값은 "4학년" 형태이므로 숫자를 문자열로 변환
                 const gradeText = profile.grade ? `${profile.grade}학년` : '';
@@ -379,25 +379,25 @@ export default function InterestSelection({
                     year: gradeText || ((user.profile as any)?.grade ? `${(user.profile as any).grade}학년` : ''),
                 };
 
-                console.log('📝 [InterestSelection] Backend profile studentId:', profile.studentId);
-                console.log('📝 [InterestSelection] Backend profile grade:', profile.grade);
-                console.log('📝 [InterestSelection] User profile studentId:', (user.profile as any)?.studentId);
-                console.log('📝 [InterestSelection] User profile grade:', (user.profile as any)?.grade);
-                console.log('📝 [InterestSelection] Final mapped data:', mappedData);
-                console.log('📝 [InterestSelection] Previous info state:', info);
+                console.log('[InterestSelection] Backend profile studentId:', profile.studentId);
+                console.log('[InterestSelection] Backend profile grade:', profile.grade);
+                console.log('[InterestSelection] User profile studentId:', (user.profile as any)?.studentId);
+                console.log('[InterestSelection] User profile grade:', (user.profile as any)?.grade);
+                console.log('[InterestSelection] Final mapped data:', mappedData);
+                console.log('[InterestSelection] Previous info state:', info);
 
                 setInfo(prev => {
                     const newInfo = {
                         ...prev,
                         ...mappedData
                     };
-                    console.log('📝 [InterestSelection] Updated info state:', newInfo);
+                    console.log('[InterestSelection] Updated info state:', newInfo);
                     return newInfo;
                 });
 
                 setIsProfileLoaded(true);
             } catch (error) {
-                console.warn('⚠️ [InterestSelection] Failed to load profile from backend, using user data:', error);
+                console.warn('[InterestSelection] Failed to load profile from backend, using user data:', error);
 
                 // 백엔드 실패 시 AuthContext의 user 정보 또는 테스트 데이터 사용
                 const fallbackData = {
@@ -408,7 +408,7 @@ export default function InterestSelection({
                     year: (user.profile as any)?.grade ? `${(user.profile as any).grade}학년` : '3학년',
                 };
 
-                console.log('📝 [InterestSelection] Using fallback data:', fallbackData);
+                console.log('[InterestSelection] Using fallback data:', fallbackData);
 
                 setInfo(prev => ({
                     ...prev,
@@ -469,9 +469,9 @@ export default function InterestSelection({
                 try {
                     const { apiService } = await import('../services/ApiService');
                     await apiService.completeOnboarding(info);
-                    console.log('✅ [InterestSelection] Onboarding completed in backend');
+                    console.log('[InterestSelection] Onboarding completed in backend');
                 } catch (error) {
-                    console.warn('⚠️ [InterestSelection] Failed to complete onboarding in backend:', error);
+                    console.warn('[InterestSelection] Failed to complete onboarding in backend:', error);
                 }
 
                 // 로컬 상태도 업데이트 (백업용)
@@ -510,7 +510,7 @@ export default function InterestSelection({
             >
                 <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', justifyContent: 'space-between' }}>
                     <Typography id="onboarding-title" variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        📝 내 정보 입력
+                        내 정보 입력
                     </Typography>
                     <IconButton color="inherit" onClick={onClose} aria-label="닫기" size="small">
                         <CloseIcon />

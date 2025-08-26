@@ -23,11 +23,11 @@ if (!existsSync(dirPath)) {
 }
 
 if (existsSync(filePath)) {
-    console.log(`✅ Dev diary already exists for ${dateStr}: ${filePath}`);
+    console.log(`Dev diary already exists for ${dateStr}: ${filePath}`);
     process.exit(0);
 }
 
-const template = `# 🗓️ ${dateStr} Dev Diary\n\n## 📌 오늘 목표\n\n## ✅ 작업 내용\n\n## 🐞 트러블슈팅 로그\n\n## ✍️ 내일 할 일\n\n`;
+const template = `# 🗓️ ${dateStr} Dev Diary\n\n## 오늘 목표\n\n## 작업 내용\n\n## 🐞 트러블슈팅 로그\n\n## ✍️ 내일 할 일\n\n`;
 
 writeFileSync(filePath, template, 'utf8');
 console.log(`✨ Created new dev diary: ${filePath}`);
@@ -41,6 +41,6 @@ if (process.argv.includes('--commit') || process.argv.includes('-c')) {
         const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
         execSync(`git push origin ${branch}`, { stdio: 'inherit' });
     } catch (err) {
-        console.error('⚠️  Git auto-commit failed:', err.message);
+        console.error(' Git auto-commit failed:', err.message);
     }
 } 

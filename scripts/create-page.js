@@ -9,7 +9,7 @@ const pageName = args[0];
 const isProtected = args[1] === 'protected' || args[1] === 'true';
 
 if (!pageName) {
-  console.log('❌ 페이지 이름을 입력해주세요!');
+  console.log('페이지 이름을 입력해주세요!');
   console.log('사용법: node scripts/create-page.js <페이지이름> [protected|public]');
   console.log('예시: node scripts/create-page.js MyPage protected');
   process.exit(1);
@@ -19,9 +19,9 @@ const pageNameCamel = pageName.charAt(0).toUpperCase() + pageName.slice(1);
 const pageNameKebab = pageName.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase();
 const routePath = `/${pageNameKebab}`;
 
-console.log(`🚀 ${pageNameCamel} 페이지를 생성합니다...`);
-console.log(`📁 경로: ${routePath}`);
-console.log(`🔒 보호됨: ${isProtected ? '예' : '아니오'}`);
+console.log(`${pageNameCamel} 페이지를 생성합니다...`);
+console.log(`경로: ${routePath}`);
+console.log(`보호됨: ${isProtected ? '예' : '아니오'}`);
 
 // 1. 페이지 컴포넌트 생성
 const pageTemplate = isProtected ?
@@ -60,7 +60,7 @@ export default ${pageNameCamel};
 
 const pagePath = `src/pages/${pageNameCamel}.tsx`;
 fs.writeFileSync(pagePath, pageTemplate);
-console.log(`✅ ${pagePath} 생성 완료`);
+console.log(`${pagePath} 생성 완료`);
 
 // 2. App.tsx에 라우트 추가
 const appPath = 'src/App.tsx';
@@ -89,7 +89,7 @@ if (!appContent.includes(`path="${routePath}"`)) {
 }
 
 fs.writeFileSync(appPath, appContent);
-console.log(`✅ App.tsx에 라우트 추가 완료`);
+console.log(`App.tsx에 라우트 추가 완료`);
 
 // 3. 보호된 페이지인 경우 보안 경로 추가
 if (isProtected) {
@@ -107,7 +107,7 @@ if (isProtected) {
       const newPaths = paths.join(',\n  ');
       authGuardContent = authGuardContent.replace(protectedPathsRegex, `const protectedPaths = [\n  ${newPaths}\n];`);
       fs.writeFileSync(authGuardPath, authGuardContent);
-      console.log(`✅ AuthGuard.tsx에 보안 경로 추가 완료`);
+      console.log(`AuthGuard.tsx에 보안 경로 추가 완료`);
     }
   }
 
@@ -125,17 +125,17 @@ if (isProtected) {
       const newPaths = paths.join(',\n    ');
       authUtilsContent = authUtilsContent.replace(authUtilsPathsRegex, `const protectedPaths = [\n    ${newPaths}\n  ];`);
       fs.writeFileSync(authUtilsPath, authUtilsContent);
-      console.log(`✅ authUtils.ts에 보안 경로 추가 완료`);
+      console.log(`authUtils.ts에 보안 경로 추가 완료`);
     }
   }
 }
 
-console.log('\n🎉 페이지 생성 완료!');
-console.log(`\n📝 다음 단계:`);
+console.log('\n페이지 생성 완료!');
+console.log(`\n다음 단계:`);
 console.log(`1. 개발 서버 재시작: npm run dev`);
 console.log(`2. 브라우저에서 ${routePath} 접속하여 확인`);
 if (isProtected) {
   console.log(`3. 로그인하지 않은 상태에서 ${routePath} 접속 시 로그인 페이지로 리다이렉트되는지 확인`);
 }
-console.log(`\n📁 생성된 파일: ${pagePath}`);
-console.log(`🔗 접속 URL: http://localhost:5173${routePath}`); 
+console.log(`\n생성된 파일: ${pagePath}`);
+console.log(`접속 URL: http://localhost:5173${routePath}`); 
