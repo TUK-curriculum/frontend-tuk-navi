@@ -1,9 +1,8 @@
 // API 클라이언트 설정
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// JWT 토큰 관리 - useData를 통해 접근
+// JWT 토큰 관리
 const getAuthToken = (): string | null => {
-    // Access token stored by AuthContext / AuthRepository
     return typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 };
 
@@ -39,7 +38,6 @@ const createHeaders = (includeAuth: boolean = true): HeadersInit => {
 const handleResponse = async (response: Response) => {
     if (!response.ok) {
         if (response.status === 401) {
-            // 인증 실패 시 토큰 제거
             removeAuthToken();
             throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
         }
@@ -96,6 +94,149 @@ export const apiClient = {
         // 사용자 정보 조회
         getAccount: async () => {
             const response = await fetch(`${API_BASE_URL}/auth/account`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+    },
+
+    // 프로필 관련 API
+    profile: {
+        // 프로필 정보 조회
+        getProfile: async () => {
+            const response = await fetch(`${API_BASE_URL}/profile`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 프로필 수정
+        updateProfile: async (updates: { username?: string; phone?: string; major?: string }) => {
+            const response = await fetch(`${API_BASE_URL}/profile`, {
+                method: 'PUT',
+                headers: createHeaders(),
+                body: JSON.stringify(updates),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 학점 요약 정보 조회
+        getSummary: async () => {
+            const response = await fetch(`${API_BASE_URL}/profile/summary`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 온보딩 완료 처리
+        completeOnboarding: async (onboardingData: Record<string, unknown>) => {
+            const response = await fetch(`${API_BASE_URL}/profile/complete-onboarding`, {
+                method: 'POST',
+                headers: createHeaders(),
+                body: JSON.stringify(onboardingData),
+            });
+
+            return handleResponse(response);
+        },
+    },
+
+    // 학적/학점 관련 API
+    records: {
+        // 모든 학적 기록 조회
+        getAll: async () => {
+            const response = await fetch(`${API_BASE_URL}/records`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 이수 학점 조회
+        getCredits: async () => {
+            const response = await fetch(`${API_BASE_URL}/users/records/credits`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 학적 기록 추가
+        add: async (recordData: Record<string, unknown>) => {
+            const response = await fetch(`${API_BASE_URL}/records`, {
+                method: 'POST',
+                headers: createHeaders(),
+                body: JSON.stringify(recordData),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 학적 기록 수정
+        update: async (recordId: string, updates: Record<string, unknown>) => {
+            const response = await fetch(`${API_BASE_URL}/records/${recordId}`, {
+                method: 'PUT',
+                headers: createHeaders(),
+                body: JSON.stringify(updates),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 학적 기록 삭제
+        delete: async (recordId: string) => {
+            const response = await fetch(`${API_BASE_URL}/records/${recordId}`, {
+                method: 'DELETE',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+    },
+
+    // 졸업 관련 API
+    graduation: {
+        // 졸업사정기준 취득현황 조회
+        getStatus: async () => {
+            const response = await fetch(`${API_BASE_URL}/graduation/status`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 필수과목 이수 내역 조회
+        getRequired: async () => {
+            const response = await fetch(`${API_BASE_URL}/graduation/required`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 졸업결격 사유 조회
+        getDisqualification: async () => {
+            const response = await fetch(`${API_BASE_URL}/graduation/disqualifications`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 항목별 통과 여부 조회
+        getPassStatus: async () => {
+            const response = await fetch(`${API_BASE_URL}/graduation/pass`, {
                 method: 'GET',
                 headers: createHeaders(),
             });
@@ -202,6 +343,26 @@ export const apiClient = {
 
             return handleResponse(response);
         },
+
+        // 강의 상세 정보 조회
+        getDetails: async (lectureId: string) => {
+            const response = await fetch(`${API_BASE_URL}/lectures/details?lect_id=${lectureId}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 선후수 과목 조회
+        getPreRequisite: async (lectureId: string) => {
+            const response = await fetch(`${API_BASE_URL}/lectures/pre-requisite?lect_id=${lectureId}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
     },
 
     // 시간표 관련 API
@@ -209,39 +370,6 @@ export const apiClient = {
         // 현재 학기 시간표 조회
         getCurrent: async () => {
             const response = await fetch(`${API_BASE_URL}/users/timetable/current`, {
-                method: 'GET',
-                headers: createHeaders(),
-            });
-
-            return handleResponse(response);
-        },
-    },
-
-    // 졸업 관련 API
-    graduation: {
-        // 이수 학점 조회
-        getCredits: async () => {
-            const response = await fetch(`${API_BASE_URL}/users/records/credits`, {
-                method: 'GET',
-                headers: createHeaders(),
-            });
-
-            return handleResponse(response);
-        },
-
-        // 졸업 요건 통과 여부 조회
-        getPassStatus: async () => {
-            const response = await fetch(`${API_BASE_URL}/graduation/pass`, {
-                method: 'GET',
-                headers: createHeaders(),
-            });
-
-            return handleResponse(response);
-        },
-
-        // 미이수 필수 과목 조회
-        getRequiredMissing: async () => {
-            const response = await fetch(`${API_BASE_URL}/graduation/required-missing`, {
                 method: 'GET',
                 headers: createHeaders(),
             });
@@ -293,6 +421,26 @@ export const apiClient = {
 
             return handleResponse(response);
         },
+
+        // 관심 분야 삭제
+        deletePreferences: async () => {
+            const response = await fetch(`${API_BASE_URL}/users/preference`, {
+                method: 'DELETE',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 대화 로그 조회
+        getChatLogs: async (userId: string) => {
+            const response = await fetch(`${API_BASE_URL}/chat/chatting-logs/${userId}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
     },
 };
 
@@ -332,7 +480,6 @@ export const refreshToken = async (): Promise<boolean> => {
 
 // 인터셉터: 401 에러 시 토큰 갱신 시도
 export const setupApiInterceptors = () => {
-    // fetch를 오버라이드하여 인터셉터 기능 추가
     const originalFetch = window.fetch;
 
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -341,7 +488,6 @@ export const setupApiInterceptors = () => {
         if (response.status === 401) {
             const refreshed = await refreshToken();
             if (refreshed) {
-                // 토큰 갱신 성공 시 원래 요청 재시도
                 const newInit = { ...init };
                 if (newInit.headers) {
                     const token = getAuthToken();
@@ -355,4 +501,4 @@ export const setupApiInterceptors = () => {
 
         return response;
     };
-}; 
+};
