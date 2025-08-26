@@ -486,7 +486,18 @@ const Register: React.FC = () => {
             }
 
             // 회원가입 API 호출 (AuthContext에서 학년 변환 처리)
-            await authRegister(basicData.name, basicData.email, basicData.password, academicData.studentId, academicData.major, academicData.grade, basicData.phone, academicData.interests);
+            await authRegister(
+                basicData.name,
+                basicData.email,
+                basicData.password,
+                academicData.studentId,
+                academicData.major,
+                academicData.grade,
+                basicData.phone,
+                academicData.interests,
+                Number(academicData.enrollmentYear),
+                Number(academicData.graduationYear)
+            );
 
             // 프로필 정보는 AuthContext에서 자동으로 초기화됨
             // useData를 통해 관리되므로 별도 저장 불필요
