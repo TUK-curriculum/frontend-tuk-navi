@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Box, Card, Typography, Grid, LinearProgress, Chip, Divider, Button, Paper, Avatar, Tooltip, Dialog, DialogContent
+    Box, Card, Typography, Grid, LinearProgress, Chip, Divider, Button, Paper, Avatar, Tooltip, Dialog, DialogContent, Alert, CircularProgress
 } from '@mui/material';
-import { School, AssignmentTurnedIn, CheckCircle, Warning, Edit, Info, Person } from '@mui/icons-material';
+import { School, AssignmentTurnedIn, CheckCircle, Warning, Edit, Info, Person, Refresh } from '@mui/icons-material';
 import Graduation from './Graduation';
-import { useData } from '../contexts/SeparatedDataContext';
 import { useAuth } from '../contexts/AuthContext';
+import { apiClient } from '../utils/apiClient';
 
-// 데이터 타입 정의
 interface GraduationStudent {
     id: string;
     name: string;
@@ -36,7 +35,6 @@ interface Course {
 
 export default function Profile() {
     const { user } = useAuth();
-    const { userData, updateProfile } = useData();
     const [student, setStudent] = useState<GraduationStudent | null>(null);
     const [credits, setCredits] = useState<GraduationCredits | null>(null);
     const [requiredCourses, setRequiredCourses] = useState<Course[]>([]);
@@ -44,58 +42,117 @@ export default function Profile() {
     const [saveStatus, setSaveStatus] = useState('');
     const [open, setOpen] = useState(false);
     const [profileImg, setProfileImg] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [backendConnected, setBackendConnected] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    // 데이터 불러오기 함수
-    const loadGraduationData = () => {
-        const graduationInfo = userData?.graduationInfo;
-        if (graduationInfo) {
-            setCredits({
-                major: graduationInfo.majorRequired,
-                liberal: graduationInfo.generalRequired,
-                basic: graduationInfo.generalElective,
-                total: graduationInfo.totalCredits
-            });
-        }
-        // 프로필 정보도 userData에서 가져오기
-        if (userData?.profile) {
-            setStudent({
-                id: userData.profile.studentId,
-                name: userData.profile.name,
-                dept: userData.profile.major,
-                curriculumYear: userData.profile.grade
-            });
+    const loadDataFromBackend = async () => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // 프로필 정보 조회 
+            const profileData = await apiClient.profile.getProfile();
+            console.log('백엔드 프로필 데이터:', profileData);
+             
+            if (profileData) {
+                setStudent({
+                    id: profileData.data.studentId || '',
+                    name: profileData.data.name || '정보 없음',
+                    dept: profileData.data.major || '',
+                    curriculumYear: profileData.data.grade || 1
+                });
+                setBackendConnected(true);
+            }
+
+            // 학적 기록 조회
+            const recordsData = await apiClient.records.getAll();
+            console.log('백엔드 학적 데이터:', recordsData);
+            
+            if (recordsData && recordsData.success && recordsData.data) {
+                const records = recordsData.data;
+                let majorCredits = 0;
+                let liberalCredits = 0;
+                let basicCredits = 0;
+                let totalCredits = 0;
+
+                records.forEach((record: any) => {
+                    if (record.grade && ['A+', 'A', 'B+', 'B', 'C+', 'C', 'P'].includes(record.grade)) {
+                        const credits = record.credits || 0;
+                        totalCredits += credits;
+                        
+                        if (record.category === '전공' || record.type === '전공필수' || record.type === '전공선택') {
+                            majorCredits += credits;
+                        } else if (record.category === '교양' || record.type === '교양필수' || record.type === '교양선택') {
+                            liberalCredits += credits;
+                        } else if (record.type === '계열기초') {
+                            basicCredits += credits;
+                        }
+                    }
+                });
+
+                setCredits({
+                    major: majorCredits,
+                    liberal: liberalCredits,
+                    basic: basicCredits,
+                    total: totalCredits
+                });
+            }
+
+            // 졸업 요건 조회
+            try {
+                const res = await apiClient.graduation.getStatus();
+                console.log('백엔드 졸업 요건 데이터:', res);
+            
+                if (res?.success && res.data) {
+                    const { disqualifications = [], flags } = res.data;
+
+                    const english = flags?.englishRequirementMet ?? !disqualifications.includes('어학자격 미취득');
+                    const internship = flags?.internshipCompleted ?? !disqualifications.includes('현장실무교과 미이수');
+                    const capstone = flags?.capstoneCompleted ?? !disqualifications.includes('종합설계 미이수');
+
+                    setExtra({ english, internship, capstone });
+                }
+            } catch (e) {
+                console.warn('졸업 정보 조회 실패:', e);
+            }
+
+            // 필수과목 조회
+            try {
+                const requiredData = await apiClient.graduation.getRequired();
+                console.log('백엔드 필수과목 데이터:', requiredData);
+                
+                if (requiredData?.success && requiredData.data?.missing) {
+                    const courses = requiredData.data.missing.map((course: any) => ({
+                        code: course.courseCode || course.code,
+                        name: course.courseName || course.name,
+                        credit: course.credits || course.credit || 3,
+                        type: course.category || course.type || '필수'
+                    }));
+                    setRequiredCourses(courses);
+                }
+            } catch (requiredError) {
+                console.warn('필수과목 정보 조회 실패:', requiredError);
+            }
+
+        } catch (err) {
+            console.error('백엔드 연결 실패:', err);
+            setError(`백엔드 연결 실패: ${err}`);
+            setBackendConnected(false);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // 실시간 데이터 업데이트 이벤트 리스너
+    const handleRefresh = () => {
+        loadDataFromBackend();
+    };
+
     useEffect(() => {
-        loadGraduationData();
-
-        // 실시간 데이터 업데이트 이벤트 리스너 등록
-        const handleDataUpdate = (event: CustomEvent) => {
-            const updatedData = event.detail;
-            setStudent(updatedData.graduationStudent || null);
-            setCredits(updatedData.graduationCredits || null);
-            setRequiredCourses(updatedData.graduationRequiredCourses || []);
-            setExtra(updatedData.graduationExtra || {});
-        };
-
-        window.addEventListener('graduationDataUpdate', handleDataUpdate as EventListener);
-
-        // 컴포넌트 언마운트 시 이벤트 리스너 제거
-        return () => {
-            window.removeEventListener('graduationDataUpdate', handleDataUpdate as EventListener);
-        };
+        loadDataFromBackend();
     }, []);
 
-    // 프로필 이미지 불러오기
-    useEffect(() => {
-        if (!user?.email) return;
-        if (userData?.profile?.avatar) setProfileImg(userData.profile.avatar);
-    }, [user?.email, userData?.profile?.avatar]);
-
-    // 프로필 이미지 업로드
     const handleProfileImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && user?.email) {
@@ -103,22 +160,18 @@ export default function Profile() {
             reader.onload = () => {
                 if (typeof reader.result === 'string') {
                     setProfileImg(reader.result);
-                    updateProfile({ avatar: reader.result });
                 }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    // 프로필 이미지 클릭 시 파일 선택
     const handleAvatarClick = () => {
         fileInputRef.current?.click();
     };
 
-    // 필수과목 이수 현황 계산
     const completedCodes = requiredCourses.map(c => c.code);
 
-    // 졸업요건 진척도 계산
     const totalRequired = 130;
     const majorRequired = 69;
     const liberalRequired = 37;
@@ -128,18 +181,31 @@ export default function Profile() {
     const basic = credits?.basic || 0;
     const completionRate = Math.round((total / totalRequired) * 100);
 
-    // 저장(수정) 버튼
-    const handleSave = () => {
-        setSaveStatus('저장되었습니다!');
-        setTimeout(() => setSaveStatus(''), 2000);
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            const updates = {
+                username: student?.name,
+                major: student?.dept,
+                phone: ''
+            };
+
+            const result = await apiClient.profile.updateProfile(updates);
+            console.log('백엔드 저장 성공:', result);
+            setSaveStatus('저장되었습니다.');
+        } catch (err) {
+            console.error('백엔드 저장 실패:', err);
+            setSaveStatus('저장에 실패했습니다.');
+        } finally {
+            setLoading(false);
+            setTimeout(() => setSaveStatus(''), 2000);
+        }
     };
 
-    // 졸업관리 모달 열기/닫기
     const handleOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
-        // 모달 닫힌 후 데이터 갱신 (이미 실시간 업데이트되므로 불필요하지만 안전을 위해)
-        setTimeout(() => loadGraduationData(), 300);
+        setTimeout(() => loadDataFromBackend(), 300);
     };
 
     return (
@@ -148,9 +214,20 @@ export default function Profile() {
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
                     마이페이지 (졸업 현황)
                 </Typography>
-                <Button variant="contained" color="primary" onClick={handleOpen} sx={{ minWidth: 180 }}>
-                    졸업관리 시작하기
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button 
+                        variant="outlined" 
+                        startIcon={<Refresh />} 
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        sx={{ minWidth: 120 }}
+                    >
+                        {loading ? <CircularProgress size={20} /> : '새로고침'}
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handleOpen} sx={{ minWidth: 180 }}>
+                        졸업관리 시작하기
+                    </Button>
+                </Box>
             </Box>
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -160,7 +237,6 @@ export default function Profile() {
             </Dialog>
 
             <Grid container spacing={3}>
-                {/* 학적 정보 */}
                 <Grid item xs={12} md={4}>
                     <Card sx={{ p: 3, mb: 2, textAlign: 'center' }}>
                         <Avatar sx={{ width: 64, height: 64, mx: 'auto', mb: 2, cursor: 'pointer' }} onClick={handleAvatarClick}>
@@ -177,28 +253,37 @@ export default function Profile() {
                                 onChange={handleProfileImgChange}
                             />
                         </Avatar>
-                        <Typography variant="h6" gutterBottom>학적 정보</Typography>
+                        <Typography variant="h6" gutterBottom>
+                            학적 정보
+                        </Typography>
                         <Divider sx={{ mb: 2 }} />
-                        <Typography variant="subtitle1">
-                            <b>{student?.name || '정보 없음'}</b>
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            학번: {student?.id || '-'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            학과: {student?.dept || '-'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            교육과정년도: {student?.curriculumYear || '-'}
-                        </Typography>
+                        {loading ? (
+                            <CircularProgress size={24} />
+                        ) : (
+                            <>
+                                <Typography variant="subtitle1">
+                                    <b>{student?.name || '정보 없음'}</b>
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    학번: {student?.id || '-'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    학과: {student?.dept || '-'}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    학년: {student?.curriculumYear || '-'}
+                                </Typography>
+                            </>
+                        )}
                     </Card>
                 </Grid>
 
-                {/* 학점 현황 */}
                 <Grid item xs={12} md={8}>
                     <Card sx={{ p: 3, mb: 2 }}>
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <School color="primary" /> 학점 현황
+                            <School color="primary" /> 
+                            학점 현황
+                            {loading && <CircularProgress size={16} />}
                         </Typography>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={3}>
@@ -246,51 +331,45 @@ export default function Profile() {
                     </Card>
                 </Grid>
 
-                {/* 필수과목 이수 현황 */}
                 <Grid item xs={12}>
                     <Card sx={{ p: 3, mb: 2 }}>
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <AssignmentTurnedIn color="primary" /> 필수과목 이수 현황
+                            <AssignmentTurnedIn color="primary" /> 
+                            필수 과목 미이수 현황
+                            {loading && <CircularProgress size={16} />}
                         </Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                            {requiredCourses.length === 0 ? (
+                            {loading ? (
+                                <CircularProgress size={24} />
+                            ) : requiredCourses.length === 0 ? (
                                 <Typography color="text.secondary">
-                                    저장된 필수과목 정보가 없습니다. 졸업관리에서 과목을 선택해주세요.
+                                    필수 과목 정보를 불러올 수 없습니다.
                                 </Typography>
                             ) : (
-                                requiredCourses.map(course => {
-                                    const completed = completedCodes.includes(course.code);
-                                    return (
-                                        <Tooltip key={course.code} title={course.name} arrow>
-                                            <Chip
-                                                label={`${course.name} (${course.credit}학점)`}
-                                                color={completed ? 'success' : 'default'}
-                                                icon={completed ? <CheckCircle sx={{ color: 'success.main' }} /> : <Warning sx={{ color: 'warning.main' }} />}
-                                                variant={completed ? 'outlined' : 'outlined'}
-                                                sx={{
-                                                    fontWeight: completed ? 'bold' : undefined,
-                                                    bgcolor: completed ? 'success.lighter' : 'background.paper',
-                                                    color: completed ? 'success.main' : 'text.secondary',
-                                                    borderColor: completed ? 'success.light' : 'grey.300',
-                                                }}
-                                            />
-                                        </Tooltip>
-                                    );
-                                })
+                                requiredCourses.map(course => (
+                                <Tooltip key={course.code} title={course.name} arrow>
+                                    <Chip
+                                    label={`${course.name} (${course.credit}학점)`}
+                                    color="default"
+                                    icon={<Warning />}
+                                    variant="outlined"
+                                    />
+                                </Tooltip>
+                                ))
                             )}
                         </Box>
                     </Card>
                 </Grid>
 
-                {/* 기타 졸업요건 */}
                 <Grid item xs={12}>
                     <Card sx={{ p: 3, mb: 2 }}>
                         <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Info color="primary" /> 기타 졸업요건
+                            <Info color="primary" /> 
+                            기타 졸업요건
                         </Typography>
                         <Grid container spacing={2}>
                             {[
-                                { key: 'capstone', label: '졸업작품(캡스톤디자인) 이수' },
+                                { key: 'capstone', label: '졸업작품(종합설계디자인) 이수' },
                                 { key: 'english', label: '공인어학성적 요건 충족' },
                                 { key: 'internship', label: '현장실습/실무 경험 이수' }
                             ].map(item => (
@@ -309,7 +388,6 @@ export default function Profile() {
                     </Card>
                 </Grid>
 
-                {/* 저장/수정 버튼 */}
                 <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                         <Button
@@ -317,8 +395,9 @@ export default function Profile() {
                             color="primary"
                             startIcon={<Edit />}
                             onClick={handleSave}
+                            disabled={loading}
                         >
-                            수정/저장
+                            {loading ? <CircularProgress size={20} /> : '저장'}
                         </Button>
                         {saveStatus && (
                             <Typography color="success.main" sx={{ alignSelf: 'center' }}>
