@@ -44,6 +44,8 @@ export interface BackendUser {
     phone?: string;
     provider?: string;
     createdAt?: string;
+    enrollmentYear?: number;
+    graduationYear?: number;
 }
 
 export interface BackendProfile {
@@ -198,6 +200,20 @@ class ApiService {
             throw error;
         }
     }
+    
+    // ===== 시간표 관리 =====
+    async getSemesters(): Promise<string[]> {
+        console.log('[ApiService] Fetching semesters');
+        try {
+            const { data: res } = await apiClient.get<ApiResponse<string[]>>('/timetable/semesters');
+            if (!res.success) throw new Error(res.message || 'Failed to fetch semesters');
+            return res.data || [];
+        } catch (error) {
+            console.error('[ApiService] Failed to fetch semesters:', error);
+            return [];
+        }
+    }
+
 
     // ===== 수강 기록 관리 =====
     async getRecords(): Promise<BackendRecord[]> {
