@@ -21,13 +21,6 @@ import { generateMockSchedule, type CurriculumSuggestion } from '../mocks/chatbo
 const CourseEditModal = lazy(() => import('../components/modals/CourseEditModal'));
 const CourseDetailModal = lazy(() => import('../components/modals/CourseDetailModal'));
 
-const semesterOptions = [
-    '2024-1학기',
-    '2024-2학기',
-    '2025-1학기',
-    '2025-2학기',
-];
-
 // 커스텀 훅: useDialog
 function useDialog<T = any>() {
     const [open, setOpen] = useState(false);
@@ -114,7 +107,7 @@ function ImageUploadModal({ open, onClose, onUpload }: { open: boolean; onClose:
 }
 
 // Header 컴포넌트
-function Header({ semester, onSemesterChange, onAddClick, addButtonRef, pinnedSemester, onPinClick, onResetClick }: { semester: string; onSemesterChange: (e: SelectChangeEvent) => void; onAddClick: (e: React.MouseEvent<HTMLElement>) => void; addButtonRef: React.RefObject<HTMLButtonElement | null>; pinnedSemester: string; onPinClick: () => void; onResetClick: () => void; }) {
+function Header({ semester, semesterOptions, onSemesterChange, onAddClick, addButtonRef, pinnedSemester, onPinClick, onResetClick }: { semester: string; semesterOptions: string[], onSemesterChange: (e: SelectChangeEvent) => void; onAddClick: (e: React.MouseEvent<HTMLElement>) => void; addButtonRef: React.RefObject<HTMLButtonElement | null>; pinnedSemester: string; onPinClick: () => void; onResetClick: () => void; }) {
     const isPinned = semester === pinnedSemester;
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -209,9 +202,29 @@ const Schedule: React.FC = () => {
         }
     }, [isAuthenticated, user?.email]);
 
-    // pinnedSemester 상태는 userData.settings.pinnedSemester로 대체
+    const [semesterOptions, setSemesterOptions] = useState<string[]>([]);
     const pinnedSemester = userData?.settings?.pinnedSemester || '';
-    const [semester, setSemester] = useState(() => pinnedSemester || '2024-2학기');
+    const [semester, setSemester] = useState<string>(pinnedSemester || '');
+
+    // 학기 목록 로딩
+    useEffect(() => {
+    (async () => {
+        try {
+        const { apiService } = await import('../services/ApiService');
+        const list = await apiService.getSemesters();
+        setSemesterOptions(list || []);
+
+        // 고정값이 유효하면 유지, 아니면 마지막(현재학기)로 기본 선택
+        if (pinnedSemester && list?.includes(pinnedSemester)) {
+            setSemester(pinnedSemester);
+        } else if (list?.length && !semester) {
+            setSemester(list[list.length - 1]); // 현재 학기
+        }
+        } catch (e) {
+        console.error('학기 목록 조회 실패:', e);
+        }
+    })();
+    }, [pinnedSemester]);
 
     // 데이터 동기화 상태 관리
     const [isDataSyncing, setIsDataSyncing] = useState(false);
@@ -552,6 +565,7 @@ const Schedule: React.FC = () => {
         <Box sx={{ p: { xs: 1, md: 3 }, mt: 8, minHeight: 'calc(100vh - 64px)', bgcolor: 'background.default', overflowY: 'auto' }}>
             <Header
                 semester={semester}
+                semesterOptions={semesterOptions}
                 onSemesterChange={handleSemesterChange}
                 onAddClick={handleAddButtonClick}
                 addButtonRef={addButtonRef}
