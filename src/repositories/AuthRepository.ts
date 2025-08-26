@@ -17,6 +17,8 @@ export interface RegisterDTO {
     semester: number;
     phone?: string;
     interests?: string[];
+    enrollmentYear?: number;
+    graduationYear?: number;
 }
 
 export interface AuthResponse {
@@ -64,6 +66,8 @@ export class AuthRepository {
                 semester: data.semester,
                 phone: data.phone,
                 interests: data.interests || [],
+                enrollmentYear: data.enrollmentYear ?? null,
+                graduationYear: data.graduationYear ?? null,
             };
 
             await apiClient.post(apiEndpoints.auth.register, signupPayload);

@@ -19,7 +19,18 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string, studentId?: string, major?: string, grade?: string | number, phone?: string) => Promise<void>;
+    register: (
+        name: string,
+        email: string,
+        password: string,
+        studentId?: string,
+        major?: string,
+        grade?: string | number,
+        phone?: string,
+        interests?: string[],
+        enrollmentYear?: number,
+        graduationYear?: number
+    ) => Promise<void>;
     logout: () => Promise<void>;
 
     // Course management - DataContext로 이동 예정
@@ -86,7 +97,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                         phone: userInfo.phone || '',
                         nickname: userInfo.nickname || userInfo.name || '',
                         interests: userInfo.interests || [],
-                        avatar: userInfo.avatar || ''
+                        avatar: userInfo.avatar || '',
+                        enrollmentYear: userInfo.enrollmentYear ?? null,
+                        graduationYear: userInfo.graduationYear ?? null,
                     };
 
                     console.log('[AuthContext] Using fallback profile data:', fallbackProfileData);
@@ -207,11 +220,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
-    const register = async (name: string, email: string, password: string, studentId?: string, major?: string, grade?: string | number, phone?: string, interests?: string[]) => {
-        console.log('[AuthContext] Starting register for:', email);
+    const register = async (
+        name: string,
+        email: string,
+        password: string,
+        studentId?: string,
+        major?: string,
+        grade?: string | number,
+        phone?: string,
+        interests?: string[],
+        enrollmentYear?: number,
+        graduationYear?: number
+    ) => {
+        console.log('[AuthContext] Starting register for:', email);        
         setIsLoading(true);
         try {
-            // grade가 이미 숫자인 경우와 문자열인 경우를 모두 처리
             let gradeNumber: number = 1;
             if (typeof grade === 'number') {
                 gradeNumber = grade;
@@ -229,6 +252,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 semester: 1,
                 phone,
                 interests: interests || [],
+                enrollmentYear,
+                graduationYear
             };
 
             console.log('[AuthContext] Calling authRepository.register');
