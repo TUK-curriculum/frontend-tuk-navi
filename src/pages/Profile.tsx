@@ -369,7 +369,7 @@ export default function Profile() {
                         </Typography>
                         <Grid container spacing={2}>
                             {[
-                                { key: 'capstone', label: '졸업작품(종합설계디자인) 이수' },
+                                { key: 'capstone', label: '졸업작품(종합설계) 이수' },
                                 { key: 'english', label: '공인어학성적 요건 충족' },
                                 { key: 'internship', label: '현장실습/실무 경험 이수' }
                             ].map(item => (
