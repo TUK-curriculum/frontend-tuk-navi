@@ -320,40 +320,40 @@ function AppContent() {
   // 회원가입 후 온보딩 모달 자동 표시 (로그인할 때마다 체크)
   React.useEffect(() => {
     const checkOnboardingStatus = async () => {
-      console.log('🔍 [App] Checking conditions - isAuthenticated:', isAuthenticated, 'user:', !!user, 'onboardingOpen:', onboardingOpen);
+      console.log('[App] Checking conditions - isAuthenticated:', isAuthenticated, 'user:', !!user, 'onboardingOpen:', onboardingOpen);
 
       if (isAuthenticated && user && !onboardingOpen) {
-        console.log('🔄 [App] Starting onboarding status check...');
+        console.log('[App] Starting onboarding status check...');
 
         try {
           // 백엔드에서 실제 온보딩 완료 상태 확인
           const { apiService } = await import('./services/ApiService');
           const profile = await apiService.getProfile();
 
-          console.log('🔍 [App] Backend profile response:', profile);
+          console.log('[App] Backend profile response:', profile);
           if (!profile || !("onboardingCompleted" in profile)) {
-            console.warn('⚠️ [App] Profile missing or malformed. Showing onboarding modal.');
+            console.warn('[App] Profile missing or malformed. Showing onboarding modal.');
             setOnboardingOpen(true);
           } else {
-            console.log('🔍 [App] Onboarding completed status:', profile.onboardingCompleted);
+            console.log('[App] Onboarding completed status:', profile.onboardingCompleted);
 
             // 백엔드의 onboarding_completed가 false인 경우에만 모달 열기
             if (!profile.onboardingCompleted) {
-              console.log('📝 [App] Opening onboarding modal - backend shows not completed');
+              console.log('[App] Opening onboarding modal - backend shows not completed');
               setOnboardingOpen(true);
             } else {
-              console.log('✅ [App] Onboarding already completed - not showing modal');
+              console.log('[App] Onboarding already completed - not showing modal');
             }
           }
         } catch (error) {
-          console.warn('⚠️ [App] Failed to check onboarding status from backend:', error);
+          console.warn('[App] Failed to check onboarding status from backend:', error);
 
           // 백엔드 실패 시에도 온보딩 모달을 표시 (새 사용자일 가능성)
-          console.log('⚠️ [App] Backend check failed - showing onboarding modal as fallback');
+          console.log('[App] Backend check failed - showing onboarding modal as fallback');
           setOnboardingOpen(true);
         }
       } else if (isAuthenticated && user && onboardingOpen) {
-        console.log('ℹ️ [App] Onboarding modal already open, skipping check');
+        console.log('[App] Onboarding modal already open, skipping check');
       }
     };
 
@@ -364,23 +364,23 @@ function AppContent() {
 
   // 온보딩 완료 후 대시보드로 이동
   const handleOnboardingComplete = React.useCallback(async (info: any) => {
-    console.log('🎉 [App] Onboarding completed with info:', info);
+    console.log('[App] Onboarding completed with info:', info);
 
     try {
       // 백엔드에 온보딩 완료 상태 업데이트
       const { apiService } = await import('./services/ApiService');
       await apiService.completeOnboarding(info);
-      console.log('✅ [App] Backend onboarding status updated');
+      console.log('[App] Backend onboarding status updated');
     } catch (error) {
-      console.warn('⚠️ [App] Failed to update backend onboarding status:', error);
+      console.warn('[App] Failed to update backend onboarding status:', error);
     }
 
     // 저장된 유저 정보를 글로벌 온보딩 상태에 반영
     try {
       updateOnboarding({ ...info, isCompleted: true });
-      console.log('✅ [App] Local onboarding status updated');
+      console.log('[App] Local onboarding status updated');
     } catch (e) {
-      console.error('❌ [App] 온보딩 정보 저장 실패:', e);
+      console.error('[App] 온보딩 정보 저장 실패:', e);
     }
 
     setOnboardingOpen(false);
@@ -500,12 +500,12 @@ function App() {
 
     // 기존 통합 데이터 구조를 1대1 분리 구조로 마이그레이션
     if (isMigrationRequired()) {
-      console.log('🔄 기존 데이터 구조에서 1대1 분리 구조로 마이그레이션 시작...');
+      console.log('기존 데이터 구조에서 1대1 분리 구조로 마이그레이션 시작...');
       const migrationSuccess = migrateAllLegacyData();
       if (migrationSuccess) {
-        console.log('✅ 데이터 마이그레이션 완료');
+        console.log('데이터 마이그레이션 완료');
       } else {
-        console.log('ℹ️ 마이그레이션할 데이터가 없거나 이미 완료됨');
+        console.log('마이그레이션할 데이터가 없거나 이미 완료됨');
       }
     }
   }, []);

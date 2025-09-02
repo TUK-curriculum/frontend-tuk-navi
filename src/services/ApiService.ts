@@ -44,6 +44,8 @@ export interface BackendUser {
     phone?: string;
     provider?: string;
     createdAt?: string;
+    enrollmentYear?: number;
+    graduationYear?: number;
 }
 
 export interface BackendProfile {
@@ -143,11 +145,11 @@ class ApiService {
         const cacheKey = `user_profile_${userEmail}`;
         const cached = getCachedData(cacheKey);
         if (cached) {
-            console.log('📋 [ApiService] Using cached profile data');
+            console.log('[ApiService] Using cached profile data');
             return cached;
         }
 
-        console.log('📡 [ApiService] Fetching user profile');
+        console.log('[ApiService] Fetching user profile');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendProfile>>('/profile');
             if (!res.success) {
@@ -158,13 +160,13 @@ class ApiService {
             setCachedData(cacheKey, profileData);
             return profileData;
         } catch (error: any) {
-            console.error('❌ [ApiService] Failed to fetch profile:', error);
+            console.error('[ApiService] Failed to fetch profile:', error);
             return null;
         }
     }
 
     async completeOnboarding(onboardingData: any): Promise<void> {
-        console.log('📡 [ApiService] Completing onboarding with data:', onboardingData);
+        console.log('[ApiService] Completing onboarding with data:', onboardingData);
         try {
             await apiClient.post('/profile/complete-onboarding', onboardingData);
 
@@ -173,15 +175,15 @@ class ApiService {
             const cacheKey = `user_profile_${userEmail}`;
             cache.delete(cacheKey);
 
-            console.log('✅ [ApiService] Onboarding completed successfully (cache cleared)');
+            console.log('[ApiService] Onboarding completed successfully (cache cleared)');
         } catch (error) {
-            console.error('❌ [ApiService] Failed to complete onboarding:', error);
+            console.error('[ApiService] Failed to complete onboarding:', error);
             throw error;
         }
     }
 
     async updateProfile(updates: { username?: string; phone?: string; major?: string }): Promise<BackendProfile> {
-        console.log('📡 [ApiService] Updating user profile:', updates);
+        console.log('[ApiService] Updating user profile:', updates);
         try {
             const response = await apiClient.put<{ success: boolean; message: string; data: any }>('/profile', updates);
             const updatedProfile = response.data.data;
@@ -194,116 +196,130 @@ class ApiService {
 
             return updatedProfile;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to update profile:', error);
+            console.error('[ApiService] Failed to update profile:', error);
             throw error;
         }
     }
+    
+    // ===== 시간표 관리 =====
+    async getSemesters(): Promise<string[]> {
+        console.log('[ApiService] Fetching semesters');
+        try {
+            const { data: res } = await apiClient.get<ApiResponse<string[]>>('/timetable/semesters');
+            if (!res.success) throw new Error(res.message || 'Failed to fetch semesters');
+            return res.data || [];
+        } catch (error) {
+            console.error('[ApiService] Failed to fetch semesters:', error);
+            return [];
+        }
+    }
+
 
     // ===== 수강 기록 관리 =====
     async getRecords(): Promise<BackendRecord[]> {
-        console.log('📡 [ApiService] Fetching user records');
+        console.log('[ApiService] Fetching user records');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendRecord[]>>('/records');
             return res.success ? res.data : [];
         } catch (error) {
-            console.error('❌ [ApiService] Failed to fetch records:', error);
+            console.error('[ApiService] Failed to fetch records:', error);
             return [];
         }
     }
 
     async addRecord(record: Omit<BackendRecord, 'id'>): Promise<BackendRecord | null> {
-        console.log('📡 [ApiService] Adding new record:', record);
+        console.log('[ApiService] Adding new record:', record);
         try {
             const { data: res } = await apiClient.post<ApiResponse<BackendRecord>>('/records', record);
             return res.success ? res.data : null;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to add record:', error);
+            console.error('[ApiService] Failed to add record:', error);
             return null;
         }
     }
 
     async updateRecord(id: string, updates: Partial<BackendRecord>): Promise<BackendRecord | null> {
-        console.log('📡 [ApiService] Updating record:', id, updates);
+        console.log('[ApiService] Updating record:', id, updates);
         try {
             const { data: res } = await apiClient.put<ApiResponse<BackendRecord>>(`/records/${id}`, updates);
             return res.success ? res.data : null;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to update record:', error);
+            console.error('[ApiService] Failed to update record:', error);
             return null;
         }
     }
 
     async deleteRecord(id: string): Promise<boolean> {
-        console.log('📡 [ApiService] Deleting record:', id);
+        console.log('[ApiService] Deleting record:', id);
         try {
             const { data: res } = await apiClient.delete<ApiResponse<null>>(`/records/${id}`);
             return res.success;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to delete record:', error);
+            console.error('[ApiService] Failed to delete record:', error);
             return false;
         }
     }
 
     // ===== 커리큘럼 관리 =====
     async getCurriculums(): Promise<BackendCurriculum[]> {
-        console.log('📡 [ApiService] Fetching curriculums');
+        console.log('[ApiService] Fetching curriculums');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendCurriculum[]>>('/curriculums');
             return res.success ? res.data : [];
         } catch (error) {
-            console.error('❌ [ApiService] Failed to fetch curriculums:', error);
+            console.error('[ApiService] Failed to fetch curriculums:', error);
             return [];
         }
     }
 
     async getCurriculumById(id: string): Promise<BackendCurriculum | null> {
-        console.log('📡 [ApiService] Fetching curriculum by ID:', id);
+        console.log('[ApiService] Fetching curriculum by ID:', id);
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendCurriculum>>(`/curriculums/${id}`);
             return res.success ? res.data : null;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to fetch curriculum:', error);
+            console.error('[ApiService] Failed to fetch curriculum:', error);
             return null;
         }
     }
 
     // ===== 시간표 관리 =====
     async getCurrentTimetable(): Promise<BackendTimetable | null> {
-        console.log('📡 [ApiService] Fetching current timetable');
+        console.log('[ApiService] Fetching current timetable');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendTimetable>>('/timetable/current');
             if (!res.success) throw new Error(res.message || 'Failed to fetch timetable');
             // 데이터가 null 이면 현재 학기 시간표 없음으로 간주
             return res.data || null;
         } catch (error) {
-            console.warn('⚠️ [ApiService] No current timetable found:', error);
+            console.warn('[ApiService] No current timetable found:', error);
             return null;
         }
     }
 
     async saveTimetable(timetable: Omit<BackendTimetable, 'id'>): Promise<BackendTimetable> {
-        console.log('📡 [ApiService] Saving timetable:', timetable);
+        console.log('[ApiService] Saving timetable:', timetable);
         try {
             const { data: res } = await apiClient.post<ApiResponse<BackendTimetable>>('/timetable', timetable);
             if (!res.success) throw new Error(res.message || 'Failed to save timetable');
             return res.data;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to save timetable:', error);
+            console.error('[ApiService] Failed to save timetable:', error);
             throw error;
         }
     }
 
     // ===== 노트 관리 =====
     async getNotes(): Promise<BackendNote[]> {
-        console.log('📡 [ApiService] Fetching notes');
+        console.log('[ApiService] Fetching notes');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendNote[]>>('/notes');
-            console.log('📡 [ApiService] Notes response:', res);
+            console.log('[ApiService] Notes response:', res);
             if (!res.success) throw new Error(res.message || 'Failed to fetch notes');
             return res.data || [];
         } catch (error: any) {
-            console.error('❌ [ApiService] Failed to fetch notes:', error);
-            console.error('❌ [ApiService] Error details:', {
+            console.error('[ApiService] Failed to fetch notes:', error);
+            console.error('[ApiService] Error details:', {
                 status: error.response?.status,
                 statusText: error.response?.statusText,
                 data: error.response?.data,
@@ -314,13 +330,13 @@ class ApiService {
     }
 
     async addNote(note: Omit<BackendNote, 'id' | 'createdAt' | 'updatedAt'>): Promise<BackendNote | null> {
-        console.log('📡 [ApiService] Adding note:', note);
+        console.log('[ApiService] Adding note:', note);
         try {
             const { data: res } = await apiClient.post<ApiResponse<BackendNote>>('/notes', note);
             if (!res.success) throw new Error(res.message || 'Failed to add note');
             return res.data;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to add note:', error);
+            console.error('[ApiService] Failed to add note:', error);
             return null;
         }
     }
@@ -338,22 +354,22 @@ class ApiService {
         };
         delete (mappedUpdates as any).pinned;
         delete (mappedUpdates as any).archived;
-        console.log('📡 [ApiService] Updating note:', id, mappedUpdates);
+        console.log('[ApiService] Updating note:', id, mappedUpdates);
         try {
             const { data: res } = await apiClient.patch<ApiResponse<BackendNote>>(`/notes/${id}`, mappedUpdates);
             if (!res.success) throw new Error(res.message || 'Failed to update note');
             return res.data;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to update note:', error);
+            console.error('[ApiService] Failed to update note:', error);
             return null;
         }
     }
 
     async deleteNote(id: string): Promise<boolean> {
-        console.log('📡 [ApiService] Deleting note:', id);
+        console.log('[ApiService] Deleting note:', id);
         // UUID 형식 검증 추가
         if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/.test(id)) {
-            console.error(`❌ [ApiService] Invalid note id: ${id}`);
+            console.error(`[ApiService] Invalid note id: ${id}`);
             throw new Error(`Invalid note id: ${id}`);
         }
         try {
@@ -361,7 +377,7 @@ class ApiService {
             if (!res.success) throw new Error(res.message || 'Failed to delete note');
             return true;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to delete note:', error);
+            console.error('[ApiService] Failed to delete note:', error);
             return false;
         }
     }
@@ -374,7 +390,7 @@ class ApiService {
         const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('userEmail') || 'anonymous' : 'anonymous');
         const key = `user_profile_${userEmail}`;
         if (cache.delete(key)) {
-            console.log(`🧹 [ApiService] Cleared profile cache for ${userEmail}`);
+            console.log(`[ApiService] Cleared profile cache for ${userEmail}`);
         }
     }
 
@@ -387,20 +403,20 @@ class ApiService {
                 cache.delete(key);
             }
         });
-        console.log('🧹 [ApiService] Cleared ALL user_profile caches');
+        console.log('[ApiService] Cleared ALL user_profile caches');
     }
 
     // ===== 알림 관리 =====
     async getNotifications(): Promise<BackendNotification[]> {
-        console.log('📡 [ApiService] Fetching notifications');
+        console.log('[ApiService] Fetching notifications');
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendNotification[]>>('/notifications');
-            console.log('📡 [ApiService] Notifications response:', res);
+            console.log('[ApiService] Notifications response:', res);
             if (!res.success) throw new Error(res.message || 'Failed to fetch notifications');
             return res.data || [];
         } catch (error: any) {
-            console.error('❌ [ApiService] Failed to fetch notifications:', error);
-            console.error('❌ [ApiService] Error details:', {
+            console.error('[ApiService] Failed to fetch notifications:', error);
+            console.error('[ApiService] Error details:', {
                 status: error.response?.status,
                 statusText: error.response?.statusText,
                 data: error.response?.data,
@@ -411,7 +427,7 @@ class ApiService {
     }
 
     async markNotificationAsRead(id: string): Promise<boolean> {
-        console.log('📡 [ApiService] Marking notification as read:', id);
+        console.log('[ApiService] Marking notification as read:', id);
         try {
             const response = await apiClient.patch<{ success: boolean; message?: string }>(`/notifications/${id}/read`);
             if (!response.success) {
@@ -419,14 +435,14 @@ class ApiService {
             }
             return true;
         } catch (error) {
-            console.error('❌ [ApiService] Failed to mark notification as read:', error);
+            console.error('[ApiService] Failed to mark notification as read:', error);
             return false;
         }
     }
 
     // ===== 졸업 관리 =====
     async getGraduationStatus(): Promise<BackendGraduationStatus> {
-        console.log('📡 [ApiService] Fetching graduation status');
+        console.log('[ApiService] Fetching graduation status');
         try {
             const response = await apiClient.get<any>('/api/graduation/status');
             const statusData = response.status || response.data;
@@ -443,7 +459,7 @@ class ApiService {
                     statusData.pass?.liberal?.passed) || false
             };
         } catch (error) {
-            console.error('❌ [ApiService] Failed to fetch graduation status:', error);
+            console.error('[ApiService] Failed to fetch graduation status:', error);
             // 실패 시 기본값 반환
             return {
                 totalCredits: 0,
@@ -467,12 +483,12 @@ class ApiService {
         missingRequiredCourses?: any[];
         recommendations?: any[];
     }> {
-        console.log('📡 [ApiService] Fetching dashboard summary');
+        console.log('[ApiService] Fetching dashboard summary');
 
         // 먼저 인증 토큰 확인
         const token = localStorage.getItem('accessToken');
         if (!token) {
-            console.warn('⚠️ [ApiService] No access token found, using mock data');
+            console.warn('[ApiService] No access token found, using mock data');
             return this.getMockDashboardData();
         }
 
@@ -503,7 +519,7 @@ class ApiService {
                 notifications: notifications.status === 'fulfilled' ? (notifications.value || []).filter(n => !n.isRead) : []
             };
         } catch (error) {
-            console.error('❌ [ApiService] Failed to fetch dashboard summary:', error);
+            console.error('[ApiService] Failed to fetch dashboard summary:', error);
             return this.getMockDashboardData();
         }
     }

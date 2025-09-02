@@ -376,7 +376,7 @@ export const generateMockAIResponse = (userInput: string, userContext?: any): Ch
         ];
     } else if (lowerInput.includes('내 정보') || lowerInput.includes('프로필')) {
         if (userContext) {
-            const profileMessage = `📋 ${userContext.name}님의 정보\n\n` +
+            const profileMessage = `${userContext.name}님의 정보\n\n` +
                 `• 전공: ${userContext.major}\n` +
                 `• 학년: ${userContext.grade}\n` +
                 `• 이수 학점: ${userContext.credits}학점\n` +

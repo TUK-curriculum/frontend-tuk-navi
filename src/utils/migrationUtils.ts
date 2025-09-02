@@ -26,7 +26,7 @@ import {
 // 기존 통합 데이터에서 분리 구조로 마이그레이션
 export const migrateUserDataToSeparatedStructure = (userId: string, legacyData: LegacyUserData): boolean => {
     try {
-        console.log(`🔄 사용자 ${userId}의 데이터를 분리 구조로 마이그레이션 시작...`);
+        console.log(`사용자 ${userId}의 데이터를 분리 구조로 마이그레이션 시작...`);
 
         // UserProfile 마이그레이션
         if (legacyData.profile) {
@@ -172,11 +172,11 @@ export const migrateUserDataToSeparatedStructure = (userId: string, legacyData: 
         if (legacyData.favorites) saveFavorites(userId, legacyData.favorites);
         if (legacyData.recentSearches) saveRecentSearches(userId, legacyData.recentSearches);
 
-        console.log(`✅ 사용자 ${userId}의 데이터 마이그레이션 완료`);
+        console.log(`사용자 ${userId}의 데이터 마이그레이션 완료`);
         return true;
 
     } catch (error) {
-        console.error(`❌ 사용자 ${userId}의 데이터 마이그레이션 실패:`, error);
+        console.error(`사용자 ${userId}의 데이터 마이그레이션 실패:`, error);
         return false;
     }
 };
@@ -184,7 +184,7 @@ export const migrateUserDataToSeparatedStructure = (userId: string, legacyData: 
 // 기존 localStorage에서 통합 데이터 찾아서 마이그레이션
 export const migrateAllLegacyData = (): boolean => {
     try {
-        console.log('🔄 기존 통합 데이터 구조 마이그레이션 시작...');
+        console.log('기존 통합 데이터 구조 마이그레이션 시작...');
 
         let migratedCount = 0;
         const currentUser = localStorage.getItem('currentUser');
@@ -217,10 +217,10 @@ export const migrateAllLegacyData = (): boolean => {
 
                             // 기존 통합 데이터 삭제 (백업용으로 남겨둘 수도 있음)
                             // localStorage.removeItem(key);
-                            console.log(`✅ ${userId} 마이그레이션 완료`);
+                            console.log(`${userId} 마이그레이션 완료`);
                         }
                     } catch (parseError) {
-                        console.error(`❌ ${userId} 데이터 파싱 실패:`, parseError);
+                        console.error(`${userId} 데이터 파싱 실패:`, parseError);
                     }
                 }
             }
@@ -231,11 +231,11 @@ export const migrateAllLegacyData = (): boolean => {
             setCurrentUserId(currentUser);
         }
 
-        console.log(`🎉 마이그레이션 완료: ${migratedCount}명의 사용자 데이터 처리`);
+        console.log(`마이그레이션 완료: ${migratedCount}명의 사용자 데이터 처리`);
         return migratedCount > 0;
 
     } catch (error) {
-        console.error('❌ 전체 마이그레이션 실패:', error);
+        console.error('전체 마이그레이션 실패:', error);
         return false;
     }
 };
@@ -264,12 +264,12 @@ export const checkAndMigrateLegacyUserData = (userId: string): boolean => {
         // 마이그레이션 실행
         const success = migrateUserDataToSeparatedStructure(userId, legacyData);
         if (success) {
-            console.log(`✅ 사용자 ${userId} 자동 마이그레이션 완료`);
+            console.log(`사용자 ${userId} 자동 마이그레이션 완료`);
         }
         return success;
 
     } catch (error) {
-        console.error(`❌ 사용자 ${userId} 마이그레이션 확인 실패:`, error);
+        console.error(`사용자 ${userId} 마이그레이션 확인 실패:`, error);
         initializeUserData(userId);
         return false;
     }
@@ -302,10 +302,10 @@ export const compareDataStructures = (userId: string): void => {
 
     try {
         const legacyData = JSON.parse(legacyDataStr);
-        console.log('🔍 기존 통합 구조:', legacyData);
+        console.log('기존 통합 구조:', legacyData);
 
         // 분리된 구조도 출력
-        console.log('🔍 새로운 분리 구조:');
+        console.log('새로운 분리 구조:');
         console.log('- Profile:', localStorage.getItem(`user_${userId}_profile`));
         console.log('- Graduation:', localStorage.getItem(`user_${userId}_graduation`));
         console.log('- Curriculum:', localStorage.getItem(`user_${userId}_curriculum`));

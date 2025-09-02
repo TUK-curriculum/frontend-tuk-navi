@@ -247,7 +247,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
     /* -------------------------------------------------------------------
-       🔄  currentUserEmail이 바뀔 때마다 사용자별 데이터 재로딩
+        currentUserEmail이 바뀔 때마다 사용자별 데이터 재로딩
     ------------------------------------------------------------------- */
     useEffect(() => {
         const loadUserData = async () => {
@@ -262,7 +262,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
                 // 로딩 상태를 더 부드럽게 처리
                 timer = setTimeout(() => setIsLoading(true), 100);
 
-                console.log(`🔄 사용자 ${currentUserEmail}의 데이터 로드 시작`);
+                console.log(`사용자 ${currentUserEmail}의 데이터 로드 시작`);
 
                 const data = getUserData();
                 setUserData(data);
@@ -270,7 +270,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
                 // 로그인 통계 업데이트
                 updateLoginStatistics();
 
-                console.log(`✅ 사용자 ${currentUserEmail}의 데이터 로드 완료`);
+                console.log(`사용자 ${currentUserEmail}의 데이터 로드 완료`);
             } catch (error) {
                 console.error('사용자 데이터 로드 실패:', error);
             } finally {
@@ -400,20 +400,20 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
 
     // 온보딩 관리
     const updateOnboarding = useCallback((onboarding: Partial<Onboarding>) => {
-        console.log('💾 [DataContext] updateOnboarding 호출:', onboarding);
-        console.log('💾 [DataContext] 현재 userData:', userData);
+        console.log('[DataContext] updateOnboarding 호출:', onboarding);
+        console.log('[DataContext] 현재 userData:', userData);
 
         if (!userData) {
-            console.warn('⚠️ [DataContext] userData가 없어서 온보딩 업데이트 실패');
+            console.warn('[DataContext] userData가 없어서 온보딩 업데이트 실패');
             return;
         }
 
         const updatedData = { ...userData, onboarding: { ...userData.onboarding, ...onboarding } };
-        console.log('💾 [DataContext] 업데이트된 데이터:', updatedData);
+        console.log('[DataContext] 업데이트된 데이터:', updatedData);
 
         setUserData(updatedData);
         updateUserField('onboarding', updatedData.onboarding);
-        console.log('✅ [DataContext] 온보딩 데이터 저장 완료');
+        console.log('[DataContext] 온보딩 데이터 저장 완료');
     }, [userData]);
 
     // 설정 관리

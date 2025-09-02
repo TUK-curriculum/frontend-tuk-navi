@@ -35,7 +35,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
 
     useEffect(() => {
         if (userData?.profile) {
-            console.log('📝 [AccountSettings] Loading profile data:', userData.profile);
+            console.log('[AccountSettings] Loading profile data:', userData.profile);
             setForm({
                 nickname: userData.profile.nickname || '',
                 name: userData.profile.name || '',
@@ -48,7 +48,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
                 phone: userData.profile.phone || ''
             });
         } else {
-            console.log('⚠️ [AccountSettings] No profile data available');
+            console.log('[AccountSettings] No profile data available');
         }
         setNewPassword('');
         setEditMode(false);
@@ -88,7 +88,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
             if (form.major !== userData.profile.major) backendUpdates.major = form.major;
 
             if (Object.keys(backendUpdates).length > 0) {
-                console.log('📡 [AccountSettings] Updating backend profile:', backendUpdates);
+                console.log('[AccountSettings] Updating backend profile:', backendUpdates);
                 await apiService.updateProfile(backendUpdates);
             }
 

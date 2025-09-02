@@ -569,12 +569,12 @@ function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
             </Grid>
             {diagnosis.lackItems.length === 0 ? (
                 <Alert severity="success" icon={<CheckCircle />}>
-                    🎉 모든 졸업 요건을 충족했습니다! 졸업 신청이 가능합니다.
+                    모든 졸업 요건을 충족했습니다! 졸업 신청이 가능합니다.
                 </Alert>
             ) : (
                 <Alert severity="warning" icon={<Warning />}>
                     <Typography variant="subtitle2" gutterBottom>
-                        ⚠️ 부족한 요건이 있습니다:
+                        부족한 요건이 있습니다:
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
                         {diagnosis.lackItems.map((item, index) => (
