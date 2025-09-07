@@ -148,6 +148,8 @@ const LectureFormModal: React.FC<LectureFormModalProps> = ({
         { value: 'wednesday', label: '수요일' },
         { value: 'thursday', label: '목요일' },
         { value: 'friday', label: '금요일' },
+        { value: 'saturday', label: '토요일' },
+        { value: 'sunday', label: '일요일' }
     ];
 
     const semesterOptions = [

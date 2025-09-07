@@ -84,11 +84,13 @@ export interface Note {
     id: string;
     title: string;
     content: string;
-    category: string;
+    category: string | undefined;
     tags?: string[];
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string | undefined;
+    updatedAt: string | undefined;
     isPinned?: boolean;
+    isArchived?: boolean;
+    order?: number;
 }
 
 export interface ChatMessage {
@@ -191,7 +193,7 @@ export interface UserStatistics {
 // 로컬스토리지 키 구조
 export interface LocalStorageData {
     currentUser: string;
-    [`user_${string}`]: UserData;
+    [key: `user_${string}`]: UserData;
 }
 
 // API 응답 타입들

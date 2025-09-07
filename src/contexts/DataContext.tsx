@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import { Course } from '../types/course';
-import { UserData, UserProfile, GraduationInfo, Curriculum, Schedule, Note, ChatMessage, Onboarding, UserSettings, Subject, NotificationItem, UserStatistics } from '../types/user';
+import { UserData, UserProfile, GraduationInfo, Curriculum, Schedule, Note, ChatMessage, Onboarding, UserSettings, Subject, NotificationItem, UserStatistics, TimetableSlot } from '../types/user';
 
 // 기본 사용자 데이터 생성 함수 (로컬 구현)
 const getDefaultUserData = (): UserData => {
@@ -129,21 +128,21 @@ const updateLoginStatistics = (): void => {
 // DataProvider 인터페이스 정의
 interface IDataProvider {
     initializeData: () => any;
-    getCourses: () => Promise<Course[]>;
-    addCourse: (course: Course) => Promise<void>;
-    updateCourse: (course: Course) => Promise<void>;
+    getCourses: () => Promise<Subject[]>;
+    addCourse: (course: Subject) => Promise<void>;
+    updateCourse: (course: Subject) => Promise<void>;
     removeCourse: (courseId: string) => Promise<void>;
-    getCompletedCourses: () => Promise<Course[]>;
-    addCompletedCourse: (course: Course) => Promise<void>;
-    updateCompletedCourse: (course: Course) => Promise<void>;
+    getCompletedCourses: () => Promise<Subject[]>;
+    addCompletedCourse: (course: Subject) => Promise<void>;
+    updateCompletedCourse: (course: Subject) => Promise<void>;
     removeCompletedCourse: (courseId: string) => Promise<void>;
-    getTimetableCourses: () => Promise<Course[]>;
-    addTimetableCourse: (course: Course) => Promise<void>;
-    updateTimetableCourse: (course: Course) => Promise<void>;
+    getTimetableCourses: () => Promise<Subject[]>;
+    addTimetableCourse: (course: Subject) => Promise<void>;
+    updateTimetableCourse: (course: Subject) => Promise<void>;
     removeTimetableCourse: (courseId: string) => Promise<void>;
-    getGraduationRequirements: () => Promise<Course[]>;
-    addGraduationRequirement: (course: Course) => Promise<void>;
-    updateGraduationRequirement: (course: Course) => Promise<void>;
+    getGraduationRequirements: () => Promise<Subject[]>;
+    addGraduationRequirement: (course: Subject) => Promise<void>;
+    updateGraduationRequirement: (course: Subject) => Promise<void>;
     removeGraduationRequirement: (courseId: string) => Promise<void>;
 }
 
@@ -246,6 +245,8 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
+    let timer: ReturnType<typeof setTimeout>; 
+
     /* -------------------------------------------------------------------
         currentUserEmail이 바뀔 때마다 사용자별 데이터 재로딩
     ------------------------------------------------------------------- */
@@ -257,7 +258,6 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
                 return;
             }
 
-            let timer: NodeJS.Timeout | undefined;
             try {
                 // 로딩 상태를 더 부드럽게 처리
                 timer = setTimeout(() => setIsLoading(true), 100);
@@ -517,7 +517,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         setUserData(updatedData);
     };
 
-    const addCourse = async (course: Course) => {
+    const addCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = [...userData.courses, course];
         const updatedData = { ...userData, courses: updatedCourses };
@@ -525,7 +525,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('courses', updatedCourses);
     };
 
-    const updateCourse = async (course: Course) => {
+    const updateCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = userData.courses.map(c => c.id === course.id ? course : c);
         const updatedData = { ...userData, courses: updatedCourses };
@@ -547,7 +547,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         setUserData(updatedData);
     };
 
-    const addCompletedCourse = async (course: Course) => {
+    const addCompletedCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = [...userData.completedCourses, course];
         const updatedData = { ...userData, completedCourses: updatedCourses };
@@ -559,7 +559,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('statistics', updatedStats);
     };
 
-    const updateCompletedCourse = async (course: Course) => {
+    const updateCompletedCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = userData.completedCourses.map(c => c.id === course.id ? course : c);
         const updatedData = { ...userData, completedCourses: updatedCourses };
@@ -585,7 +585,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         setUserData(updatedData);
     };
 
-    const addTimetableCourse = async (course: Course) => {
+    const addTimetableCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = [...userData.timetableCourses, course];
         const updatedData = { ...userData, timetableCourses: updatedCourses };
@@ -593,7 +593,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('timetableCourses', updatedCourses);
     };
 
-    const updateTimetableCourse = async (course: Course) => {
+    const updateTimetableCourse = async (course: Subject) => {
         if (!userData) return;
         const updatedCourses = userData.timetableCourses.map(c => c.id === course.id ? course : c);
         const updatedData = { ...userData, timetableCourses: updatedCourses };
@@ -615,26 +615,26 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         setUserData(updatedData);
     };
 
-    const getCurriculums = async (): Promise<Course[]> => {
+    const getCurriculums = async (): Promise<Subject[]> => {
         return userData?.courses || [];
     };
 
-    const addCurriculum = async (curriculum: Course): Promise<void> => {
+    const addCurriculum = async (curriculum: Subject): Promise<void> => {
         await addCourse(curriculum);
     };
 
-    const getSchedule = async (semester: string): Promise<Course[]> => {
+    const getSchedule = async (semester: string): Promise<Subject[]> => {
         return userData?.timetableCourses || [];
     };
 
-    const saveSchedule = async (semester: string, courses: Course[]): Promise<void> => {
+    const saveSchedule = async (semester: string, courses: Subject[]): Promise<void> => {
         if (!userData) return;
         const updatedData = { ...userData, timetableCourses: courses };
         setUserData(updatedData);
         updateUserField('timetableCourses', courses);
     };
 
-    const applyCurriculum = async (curriculum: Course): Promise<void> => {
+    const applyCurriculum = async (curriculum: Subject): Promise<void> => {
         await addCourse(curriculum);
     };
 
@@ -803,7 +803,7 @@ export const useSchedule = (semester: string) => {
         return schedule.timetable;
     };
 
-    const saveSchedule = async (newCourses: Course[]) => {
+    const saveSchedule = async (newCourses: TimetableSlot[]) => {
         const updatedSchedule = {
             ...schedule,
             currentSemester: semester,
