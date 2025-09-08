@@ -209,6 +209,35 @@ class ApiService {
             throw error;
         }
     }
+
+    async getSummary(): Promise<{
+        totalCredits: number;
+        majorCredits: number;
+        liberalCredits: number;
+        averageGrade?: number;
+    }> {
+        try {
+            const { data: res } = await apiClient.get<ApiResponse<{
+                totalCredits: number;
+                majorCredits: number;
+                liberalCredits: number;
+                averageGrade?: number;
+            }>>('/profile/summary');
+
+            if (!res.success) {
+                throw new Error(res.message || '학점 요약 조회 실패');
+            }
+            return res.data;
+        } catch (error) {
+            console.error('[ApiService] 학점 요약 조회 실패:', error);
+            return {
+                totalCredits: 0,
+                majorCredits: 0,
+                liberalCredits: 0,
+                averageGrade: undefined
+            };
+        }
+    }
     
     async getSemesters(): Promise<string[]> {
         console.log('[ApiService] Fetching semesters');
@@ -741,13 +770,14 @@ class ApiService {
     }
 
     // ===== 졸업 관리 =====
-    async getGraduationStatus(): Promise<BackendGraduationStatus> {
+    async getGraduationStatus(): Promise<BackendGraduationStatus & {
+        thresholds?: { totalRequired: number; majorRequired: number; liberalRequired: number }
+    }> {
         console.log('[ApiService] Fetching graduation status');
         try {
-            const response = await apiClient.get<any>('/api/graduation/status');
-            const statusData = response.status || response.data;
+            const response = await apiClient.get<any>('/graduation/status');
+            const statusData = response.data?.data;
 
-            // 백엔드 응답을 프론트엔드가 기대하는 형식으로 변환
             return {
                 totalCredits: statusData.pass?.total?.actual || 0,
                 majorCredits: statusData.pass?.major?.actual || 0,
@@ -756,18 +786,27 @@ class ApiService {
                 missingCourses: statusData.missingCourses?.missing || [],
                 isGraduationReady: (statusData.pass?.total?.passed &&
                     statusData.pass?.major?.passed &&
-                    statusData.pass?.liberal?.passed) || false
+                    statusData.pass?.liberal?.passed) || false,
+                thresholds: {
+                    totalRequired: statusData.pass?.total?.threshold || 130,
+                    majorRequired: statusData.pass?.major?.threshold || 69,
+                    liberalRequired: statusData.pass?.liberal?.threshold || 37,
+                }
             };
         } catch (error) {
             console.error('[ApiService] Failed to fetch graduation status:', error);
-            // 실패 시 기본값 반환
             return {
                 totalCredits: 0,
                 majorCredits: 0,
                 liberalCredits: 0,
                 requiredCourses: [],
                 missingCourses: [],
-                isGraduationReady: false
+                isGraduationReady: false,
+                thresholds: {
+                    totalRequired: 130,
+                    majorRequired: 69,
+                    liberalRequired: 37,
+                }
             };
         }
     }
@@ -782,10 +821,14 @@ class ApiService {
         canGraduate?: boolean;
         missingRequiredCourses?: any[];
         recommendations?: any[];
+        thresholds?: {
+            totalRequired: number;
+            majorRequired: number;
+            liberalRequired: number;
+        };
     }> {
         console.log('[ApiService] Fetching dashboard summary');
 
-        // 먼저 인증 토큰 확인
         const token = localStorage.getItem('accessToken');
         if (!token) {
             console.warn('[ApiService] No access token found, using mock data');
@@ -797,7 +840,12 @@ class ApiService {
                 recentNotes: [],
                 notifications: [],
                 missingRequiredCourses: [],
-                recommendations: []
+                recommendations: [],
+                thresholds: {
+                    totalRequired: 130,
+                    majorRequired: 69,
+                    liberalRequired: 37
+                }
             };
         }
 
@@ -825,7 +873,8 @@ class ApiService {
                 recommendations: graduationData?.recommendations || [],
                 upcomingCourses: timetable.status === 'fulfilled' ? (timetable.value?.courses || []) : [],
                 recentNotes: notes.status === 'fulfilled' ? (notes.value || []).slice(0, 5) : [],
-                notifications: notifications.status === 'fulfilled' ? (notifications.value || []).filter(n => !n.isRead) : []
+                notifications: notifications.status === 'fulfilled' ? (notifications.value || []).filter(n => !n.isRead) : [],
+                thresholds: graduationData?.thresholds
             };
         } catch (error) {
             console.error('[ApiService] Failed to fetch dashboard summary:', error);
@@ -837,7 +886,12 @@ class ApiService {
                 recentNotes: [],
                 notifications: [],
                 missingRequiredCourses: [],
-                recommendations: []
+                recommendations: [],
+                thresholds: {
+                    totalRequired: 130,
+                    majorRequired: 69,
+                    liberalRequired: 37
+                }
             };
         }
     }

@@ -168,6 +168,13 @@ const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const { userData, completedCourses, isLoading, error } = useData();
 
+    // 졸업 요구 학점 상태
+    const [requiredThresholds, setRequiredThresholds] = useState({
+        totalRequired: 130,
+        majorRequired: 69,
+        liberalRequired: 37,
+    });
+
     // useReducer로 상태 통합
     const [state, dispatch] = useReducer(dashboardReducer, initialState);
     const { contentLoading, dataError, backendData } = state;
@@ -192,7 +199,7 @@ const Dashboard: React.FC = () => {
         }
     }, []);
 
-    // 백엔드 데이터 즉시 fetch (setTimeout 제거)
+    // 백엔드 데이터 즉시 fetch
     const loadBackendData = useCallback(async () => {
         if (!user?.email) return;
         try {
@@ -200,7 +207,16 @@ const Dashboard: React.FC = () => {
             const [profileData, dashboardData] = await Promise.all([
                 apiService.getProfile(),
                 apiService.getDashboardSummary()
-            ]);
+                ]);
+
+            if (dashboardData?.thresholds) {
+                setRequiredThresholds({
+                    totalRequired: dashboardData.thresholds.totalRequired || 130,
+                    majorRequired: dashboardData.thresholds.majorRequired || 69,
+                    liberalRequired: dashboardData.thresholds.liberalRequired || 37,
+                });
+            }
+
             dispatch({
                 type: 'SET_BACKEND_DATA',
                 payload: { ...dashboardData, profile: profileData }
@@ -241,20 +257,18 @@ const Dashboard: React.FC = () => {
 
     // 졸업 진단 최적화 - 졸업까지 퍼센트로 계산
     const graduationProgress = useMemo(() => {
-        // 백엔드에서 계산된 값이 있으면 우선 사용
         if (backendData.graduationProgress > 0) {
             return backendData.graduationProgress;
         }
 
         if (!userInfo?.courses || !userInfo.credits) return 0;
 
-        // 일반적인 졸업 요구 학점 (130학점으로 가정)
-        const requiredCredits = 130;
+        const requiredCredits = requiredThresholds.totalRequired;
         const currentCredits = typeof userInfo.credits === 'number' ? userInfo.credits : 0;
         const progress = Math.min((currentCredits / requiredCredits) * 100, 100);
 
         return Math.round(progress);
-    }, [userInfo?.courses, userInfo?.credits, backendData.graduationProgress]);
+    }, [userInfo?.courses, userInfo?.credits, backendData.graduationProgress, requiredThresholds.totalRequired]);
 
     // 세션별 통계 카드 최적화
     const statCards = useMemo(() => {
