@@ -184,7 +184,6 @@ const Schedule: React.FC = () => {
     }, [user?.email, semester]);
 
     // 데이터 동기화 함수
-    // 데이터 동기화 함수
     const syncDataWithBackend = useCallback(async () => {
         if (!user?.email) return;
 
@@ -377,26 +376,16 @@ const Schedule: React.FC = () => {
     // 과목 삭제 함수
     const handleDeleteCourse = async (id: string) => {
         try {
-            const currentTimetable = await apiService.getTimetableBySemester(semester);
-            
-            if (currentTimetable?.TimetableSlots) {
-                const updatedSlots = currentTimetable.TimetableSlots.filter(
-                    (slot: any) => slot.id.toString() !== id
-                );
+            await apiClient.delete(`/timetable/course/${semester}/${id}`);
 
-                await apiService.saveTimetable({
-                    semester,
-                    courses: updatedSlots,
-                    updatedAt: new Date().toISOString()
-                });
-
-                const latestTimetable = await apiService.getTimetableBySemester(semester);
-                if (latestTimetable?.TimetableSlots) {
-                    const latestCourses = latestTimetable.TimetableSlots.map(slotToCourse);
-                    setLocalCourses(latestCourses);
-                }
+            const latestTimetable = await apiService.getTimetableBySemester(semester);
+            if (latestTimetable?.TimetableSlots) {
+                const latestCourses = latestTimetable.TimetableSlots.map(slotToCourse);
+                setLocalCourses(latestCourses);
+            } else {
+                setLocalCourses([]);
             }
-            
+
             showSnackbar('과목이 삭제되었습니다.', 'success');
             closeDialog();
         } catch (error: any) {
@@ -452,7 +441,7 @@ const Schedule: React.FC = () => {
                         
                         setLocalCourses(latestCourses); // 직접 상태 업데이트
                         
-                        showSnackbar(`엑셀에서 ${latestCourses.length}개 과목이 반영되었습니다.`, 'success');
+                        showSnackbar(`${latestCourses.length}개 과목이 반영되었습니다.`, 'success');
                     } else {
                         showSnackbar('엑셀 업로드는 성공했지만 과목 데이터를 가져오지 못했습니다.', 'warning');
                     }
