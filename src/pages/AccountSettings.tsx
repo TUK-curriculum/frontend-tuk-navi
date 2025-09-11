@@ -14,6 +14,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { apiService } from '../services/ApiService';
+import { PreferredProfessor } from '../types/professor';
+import { professorService } from '@/services/ProfessorService';
 
 const grades = [1, 2, 3, 4, 5];
 const semesters = [1, 2];
@@ -73,7 +75,6 @@ interface ProfileForm {
 
 const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
   const { user } = useAuth();
-  const { userData, updateUserField } = useData();
   const [form, setForm] = useState<ProfileForm>({
     name: '',
     studentId: '',
@@ -94,9 +95,10 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
-  const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
-
-  // 백엔드에서 프로필 데이터 로드
+  const [selectedProfessors, setSelectedProfessors] = useState<PreferredProfessor[]>([]);
+  const [initialPreferred, setInitialPreferred] = useState<PreferredProfessor[]>([]);
+  
+  // 프로필 데이터 로드
   const loadProfileFromBackend = async () => {
     try {
       setInitialLoading(true);
@@ -127,9 +129,20 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
     }
   };
 
+  const loadPreferredProfessors = async () => {
+    try {
+        const preferred = await professorService.getPreferredProfessors();
+        setSelectedProfessors(preferred);
+        setInitialPreferred(preferred);
+    } catch (err) {
+        console.error('선호교수 불러오기 실패:', err);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       loadProfileFromBackend();
+      loadPreferredProfessors();
       setEditMode(false);
       setError('');
       setSuccess('');
@@ -141,22 +154,43 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
   };
 
   const handleProfessorToggle = (professorId: number) => {
-    setSelectedProfessors(prev => 
-      prev.includes(professorId)
-        ? prev.filter(id => id !== professorId)
-        : [...prev, professorId]
-    );
+    setSelectedProfessors(prev => {
+        const exists = prev.find(p => p.professor_id === professorId);
+        if (exists) {
+          return prev.filter(p => p.professor_id !== professorId);
+        } else {
+          const prof = availableProfessors.find(p => p.id === professorId);
+          return prof
+            ? [...prev, { preferred_id: 0, professor_id: prof.id, name: prof.name, lecture_count: 0 }]
+            : prev;
+        }
+    });
   };
 
   const handleSave = async () => {
     if (!user?.email) return;
-    
+
     setLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      const updateData = {
+        const toAdd = selectedProfessors.filter(
+          p => !initialPreferred.some(ip => ip.professor_id === p.professor_id)
+        );
+        const toRemove = initialPreferred.filter(
+          ip => !selectedProfessors.some(p => p.professor_id === ip.professor_id)
+        );
+
+        for (const p of toAdd) {
+          await professorService.addPreferredProfessor(p.professor_id);
+        }
+        for (const ip of toRemove) {
+          await professorService.removePreferredProfessor(ip.preferred_id);
+        }
+
+        // 프로필 저장
+        await apiService.updateProfile({
         name: form.name,
         studentId: form.studentId,
         major: form.major,
@@ -170,35 +204,20 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
         maxCreditsPerTerm: form.maxCreditsPerTerm,
         enrollmentYear: form.enrollmentYear || undefined,
         graduationYear: form.graduationYear || undefined
-      };
+        });
 
-      const result = await apiService.updateProfile(updateData);
-      console.log('프로필 업데이트 성공:', result);
-
-      if (userData) {
-        const updatedProfile = {
-          ...userData.profile,
-          name: form.name,
-          studentId: form.studentId,
-          major: form.major,
-          grade: form.grade,
-          semester: form.semester,
-          phone: form.phone
-        };
-        updateUserField('profile', updatedProfile);
-      }
-
-      setSuccess('프로필이 성공적으로 저장되었습니다!');
-      setEditMode(false);
-      apiService.clearProfileCache();
-      
+        setSuccess('프로필이 성공적으로 저장되었습니다!');
+        setEditMode(false);
+        apiService.clearProfileCache();
+        setInitialPreferred(selectedProfessors);
     } catch (error: any) {
-      console.error('프로필 저장 실패:', error);
-      setError(error.message || '저장에 실패했습니다.');
+        console.error('프로필 저장 실패:', error);
+        setError(error.message || '저장에 실패했습니다.');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
+
 
   const handleCancel = () => {
     loadProfileFromBackend();
@@ -340,8 +359,8 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
                     <Chip
                         key={professor.id}
                         label={professor.name}
-                        color={selectedProfessors.includes(professor.id) ? 'primary' : 'default'}
-                        variant={selectedProfessors.includes(professor.id) ? 'filled' : 'outlined'}
+                        color={selectedProfessors.some(p => p.professor_id === professor.id) ? 'primary' : 'default'}
+                        variant={selectedProfessors.some(p => p.professor_id === professor.id) ? 'filled' : 'outlined'}
                         onClick={() => handleProfessorToggle(professor.id)}
                         sx={{ cursor: 'pointer', fontWeight: 600 }}
                     />
@@ -349,13 +368,13 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
                 </Box>
                 ) : (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2 }}>
-                    {selectedProfessors.length > 0 ? (
-                    selectedProfessors.map(professorId => {
-                        const professor = availableProfessors.find(p => p.id === professorId);
+                    {initialPreferred.length > 0 ? (
+                    initialPreferred.map(p => {
+                        const professor = availableProfessors.find(ap => ap.id === p.professor_id);
                         return professor ? (
                         <Chip
-                            key={professor.id}
-                            label={professor.name}
+                            key={p.professor_id}
+                            label={p.name}
                             color="primary"
                             variant="filled"
                         />

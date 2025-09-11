@@ -61,6 +61,14 @@ export interface BackendProfile {
     provider?: string;
     createdAt?: string;
     updatedAt?: string;
+    interests?: string[];
+    completedCredits?: number;
+    career?: string;
+    industry?: string;
+    remainingSemesters?: number;
+    maxCreditsPerTerm?: number;
+    enrollmentYear?: number;
+    graduationYear?: number;
 }
 
 export interface BackendRecord {
@@ -191,7 +199,24 @@ class ApiService {
         }
     }
 
-    async updateProfile(updates: { username?: string; phone?: string; major?: string }): Promise<BackendProfile> {
+    async updateProfile(updates: {
+        username?: string;
+        name?: string;
+        studentId?: string;
+        major?: string;
+        grade?: number;
+        semester?: number;
+        phone?: string;
+        interests?: string[];
+        completedCredits?: number;
+        career?: string;
+        industry?: string;
+        remainingSemesters?: number;
+        maxCreditsPerTerm?: number;
+        enrollmentYear?: number;
+        graduationYear?: number;
+        onboardingCompleted?: boolean;
+    }): Promise<BackendProfile> {
         console.log('[ApiService] Updating user profile:', updates);
         try {
             const response = await apiClient.put<{ success: boolean; message: string; data: any }>('/profile', updates);
