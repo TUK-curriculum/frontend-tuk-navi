@@ -64,20 +64,23 @@ import BusinessIcon from '@mui/icons-material/Business';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-// import { TOPBAR_HEIGHT } from '../App'; // 삭제
 import { styled } from '@mui/system';
 import { curriculumService } from '../services/CurriculumService';
 import {
     Curriculum as CurriculumType,
     CurriculumWithStats,
     CurriculumFormData,
-    LectureFormData,
+    AddLectureRequest,
     Lecture,
+    CurriculumLecture,
+    Curriculum,
 } from '../types/curriculum';
 import CurriculumCreateModal from '../components/curriculum/CurriculumCreateModal';
 import CurriculumDetailModal from '../components/curriculum/CurriculumDetailModal';
 import CurriculumEditModal from '../components/curriculum/CurriculumEditModal';
 import LectureFormModal from '../components/curriculum/LectureFormModal';
+import LectureStatusModal from '../components/curriculum/LectureStatusModal';
+import apiClient from '../config/apiClient';
 
 // Constants
 const CONSTANTS = {
@@ -91,6 +94,8 @@ const CONSTANTS = {
         MAJOR_ELECTIVE: '전공선택',
         LIBERAL_ARTS: '교양',
         EXTERNAL: '외부강의/인증',
+        RESEARCH: '현장연구',
+        FREE: '자유',
     },
 } as const;
 
@@ -150,69 +155,83 @@ const getCategoryIcon = (category: string) => {
             return <PsychologyIcon color="secondary" />;
         case CONSTANTS.CATEGORIES.LIBERAL_ARTS:
             return <LanguageIcon color="success" />;
+        case CONSTANTS.CATEGORIES.RESEARCH:
+            return <BusinessIcon color="info" />;
+        case CONSTANTS.CATEGORIES.FREE:
+            return <StarOutline color="warning" />;
         case CONSTANTS.CATEGORIES.EXTERNAL:
-            return <BusinessIcon color="warning" />;
+            return <PublicOutlined color="action" />;
         default:
             return <SchoolOutlined color="info" />;
     }
 };
 
-const getStatusIcon = (status: 'completed' | 'current' | 'pending' | 'elective') => {
+
+const getStatusChip = (lecture: CurriculumLecture | string) => {
+    const status = typeof lecture === 'string' ? lecture : lecture.status;
+    const isRetaken = typeof lecture === 'object' ? lecture.isRetaken : false;
+    
+    if (isRetaken) {
+        return { label: '재수강', color: 'secondary' as const };
+    }
+    
+    switch (status) {
+        case 'completed':
+            return { label: '수강완료', color: 'success' as const };
+        case 'current':
+            return { label: '수강중', color: 'info' as const };
+        case 'planned':
+            return { label: '수강예정', color: 'default' as const };
+        case 'off-track':
+            return { label: '미이수', color: 'warning' as const };
+        default:
+            return { label: '미정', color: 'default' as const };
+    }
+};
+
+const getStatusIcon = (lecture: CurriculumLecture | string) => {
+    const status = typeof lecture === 'string' ? lecture : lecture.status;
+    
     switch (status) {
         case 'completed':
             return <CheckCircleIcon color="success" />;
         case 'current':
             return <PendingIcon color="info" />;
-        case 'pending':
-            return <ScheduleIcon color="warning" />;
-        case 'elective':
-            return <RadioButtonUncheckedIcon color="disabled" />;
+        case 'planned':
+            return <ScheduleIcon color="action" />;
+        case 'off-track':
+            return <RadioButtonUncheckedIcon color="warning" />;
         default:
             return <RadioButtonUncheckedIcon color="disabled" />;
     }
 };
 
-const getStatusColor = (status: 'completed' | 'current' | 'pending' | 'elective') => {
-    switch (status) {
-        case 'completed':
-            return 'success';
-        case 'current':
-            return 'info';
-        case 'pending':
-            return 'warning';
-        case 'elective':
-            return 'default';
-        default:
-            return 'default';
-    }
+const getSemesterLabel = (semester: string) => {
+    const [grade, sem] = semester.split('-');
+    return `${grade}학년 ${sem}학기`;
 };
 
-const getSemesterLabel = (semester: number) => {
-    const year = Math.floor((semester - 1) / 2) + 1;
-    const semesterNum = semester % 2 === 0 ? 2 : 1;
-    return `${year}-${semesterNum}`;
-};
-
-const getSemesterYear = (semester: number) => {
-    // 현재 연도 기준으로 계산 (2025년 기준)
-    const baseYear = 2025;
-    const yearOffset = Math.floor((semester - 1) / 2);
-    return baseYear + yearOffset;
+const getSemesterYear = (semester: string, baseYear: number = 2025) => {
+    const [grade] = semester.split('-');
+    return baseYear + (parseInt(grade) - 1);
 };
 
 // 과목 카테고리 분류 함수
-const categorizeLecture = (lecture: Lecture): string => {
-    // lecture_name을 기반으로 카테고리 분류
-    const name = lecture.lecture_name || '';
-
-    if (name.includes('전공필수') || name.includes('필수')) {
-        return CONSTANTS.CATEGORIES.MAJOR_REQUIRED;
-    } else if (name.includes('교양') || name.includes('일반교양')) {
-        return CONSTANTS.CATEGORIES.LIBERAL_ARTS;
-    } else if (name.includes('외부') || name.includes('인증') || name.includes('온라인')) {
-        return CONSTANTS.CATEGORIES.EXTERNAL;
-    } else {
-        return CONSTANTS.CATEGORIES.MAJOR_ELECTIVE;
+const categorizeLecture = (lecture: CurriculumLecture): string => {
+    switch (lecture.type) {
+        case 'MR':
+            return CONSTANTS.CATEGORIES.MAJOR_REQUIRED;
+        case 'ME':
+            return CONSTANTS.CATEGORIES.MAJOR_ELECTIVE;
+        case 'GR':
+        case 'GE':
+            return CONSTANTS.CATEGORIES.LIBERAL_ARTS;
+        case 'RE':
+            return CONSTANTS.CATEGORIES.RESEARCH; 
+        case 'FE':
+            return CONSTANTS.CATEGORIES.FREE;
+        default:
+            return CONSTANTS.CATEGORIES.MAJOR_ELECTIVE;
     }
 };
 
@@ -256,9 +275,12 @@ interface SnackbarState {
 // Custom Hooks
 const useCurriculumData = () => {
     const { user } = useAuth();
-    const [curricula, setCurricula] = useState<CurriculumType[]>([]);
+    const [curricula, setCurricula] = useState<Curriculum[]>([]);
+    const [currentSemester, setCurrentSemester] = useState<string>('1-1');
+    const [userProfile, setUserProfile] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showDefaultOnly, setShowDefaultOnly] = useState(false);
 
     const loadCurricula = useCallback(async () => {
         if (!user?.email) {
@@ -269,25 +291,28 @@ const useCurriculumData = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await curriculumService.getCurriculums();
-            setCurricula(data);
+
+            const [curriculaData, profileResponse] = await Promise.all([
+                curriculumService.getCurriculums(showDefaultOnly),
+                apiClient.get('/profile')
+            ]);
+
+            const profileData = profileResponse.data.data;
+            setUserProfile(profileData);
+
+            const grade = profileData.grade || 1;
+            const semester = profileData.semester || 1;
+            setCurrentSemester(`${grade}-${semester}`);
+
+            setCurricula(curriculaData);
+
         } catch (error) {
             console.error('Failed to load curricula:', error);
             setError(handleCurriculumError(error));
         } finally {
             setLoading(false);
         }
-    }, [user?.email]);
-
-    const deleteCurriculum = useCallback(async (id: number) => {
-        try {
-            await curriculumService.deleteCurriculum(id);
-            setCurricula(prev => prev.filter(curriculum => curriculum.id !== id));
-        } catch (error) {
-            console.error('Failed to delete curriculum:', error);
-            throw error;
-        }
-    }, []);
+    }, [user?.email, showDefaultOnly]);
 
     useEffect(() => {
         loadCurricula();
@@ -295,42 +320,53 @@ const useCurriculumData = () => {
 
     return {
         curricula,
+        currentSemester,
+        userProfile,
         setCurricula,
         loading,
         error,
         loadCurricula,
-        deleteCurriculum,
+        deleteCurriculum: async (id: number) => {
+            try {
+                await curriculumService.deleteCurriculum(id);
+                setCurricula(prev => prev.filter(c => c.id !== id));
+            } catch (err) {
+                console.error('Failed to delete curriculum:', err);
+                throw err;
+            }
+        },
+        showDefaultOnly,
+        setShowDefaultOnly
     };
 };
 
 const useCurriculumFiltering = (curricula: CurriculumType[]) => {
     const [search, setSearch] = useState('');
-    const [sort, setSort] = useState<'recent' | 'name' | 'lectures'>('recent');
-    const [showDefaultOnly, setShowDefaultOnly] = useState(false);
+    const [sort, setSort] = useState<'recent' | 'name'>('recent');
 
     const filteredCurricula = useMemo(() => {
-        return curriculumService.filterAndSortCurriculums(curricula, search, sort, showDefaultOnly);
-    }, [curricula, search, sort, showDefaultOnly]);
+        return curriculumService.filterAndSortCurriculums(curricula, search, sort);
+    }, [curricula, search, sort]);
 
     return {
         search,
         setSearch,
         sort,
         setSort,
-        showDefaultOnly,
-        setShowDefaultOnly,
         filteredCurricula,
     };
 };
 
 // Components
 interface SemesterCardProps {
-    semester: number;
-    lectures: Lecture[];
+    semester: string;
+    lectures: CurriculumLecture[];
     isCurrent: boolean;
     isCompleted: boolean;
-    onAddLecture: (curriculumId: number, semester: number) => void;
+    onAddLecture: (curriculumId: number, semester: string) => void;
     curriculumId: number;
+    currentUserSemester: string;
+    onLectureClick: (lecture: CurriculumLecture) => void;
 }
 
 const SemesterCard: React.FC<SemesterCardProps> = ({
@@ -340,15 +376,19 @@ const SemesterCard: React.FC<SemesterCardProps> = ({
     isCompleted,
     onAddLecture,
     curriculumId,
+    currentUserSemester,
+    onLectureClick,
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const CardComponent = isCompleted ? CompletedCard : isCurrent ? CurrentCard : TimelineCard;
 
+    const [currentGrade, currentSem] = currentUserSemester.split('-').map(Number);
+    
     // 과목들을 카테고리별로 분류
     const categorizedLectures = useMemo(() => {
-        const categories = new Map<string, Lecture[]>();
+        const categories = new Map<string, CurriculumLecture[]>();
 
         lectures.forEach(lecture => {
             const category = categorizeLecture(lecture);
@@ -364,124 +404,228 @@ const SemesterCard: React.FC<SemesterCardProps> = ({
 
     const totalCredits = lectures.reduce((sum, lecture) => sum + (lecture.credits || 3), 0);
     const semesterLabel = getSemesterLabel(semester);
-    const semesterYear = getSemesterYear(semester);
 
     return (
         <Zoom in={true} style={{ transitionDelay: isCurrent ? '0ms' : '100ms' }}>
             <CardComponent sx={{ mb: 2 }}>
                 <Box sx={{ p: 2 }}>
+                    {/* 학기 헤더 */}
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Box>
                             <Typography variant="h6" component="h3" fontWeight="bold">
-                                {semesterLabel}학기 ({semesterYear}년 {semester % 2 === 0 ? '2' : '1'}학기)
+                                {semesterLabel}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 총 {lectures.length}과목 • {totalCredits}학점
                             </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {isCompleted && <CheckCircleIcon color="success" />}
-                            {isCurrent && <PendingIcon color="info" />}
-                            <Chip
-                                label={isCompleted ? '완료' : isCurrent ? '진행중' : '예정'}
-                                color={isCompleted ? 'success' : isCurrent ? 'info' : 'default'}
-                                size="small"
-                            />
-                        </Box>
+                        <Chip
+                            label={isCompleted ? '완료' : isCurrent ? '진행중' : '예정'}
+                            color={isCompleted ? 'success' : isCurrent ? 'info' : 'default'}
+                            size="small"
+                        />
                     </Box>
 
                     <Divider sx={{ mb: 2 }} />
 
-                    {Array.from(categorizedLectures.entries()).map(([category, categoryLectures]) => (
-                        <Accordion key={category} sx={{ mb: 1 }}>
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CategoryIcon>
-                                        {getCategoryIcon(category)}
-                                    </CategoryIcon>
-                                    <Typography variant="subtitle1" fontWeight="medium">
-                                        {category} ({categoryLectures.length}과목)
-                                    </Typography>
-                                </Box>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                <List dense>
-                                    {categoryLectures.map((lecture, index) => (
-                                        <ListItem key={index} sx={{ pl: 0 }}>
-                                            <ListItemIcon>
-                                                {getStatusIcon(lecture.status || 'pending')}
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={lecture.courseName}
-                                                secondary={`${lecture.credits || 3}학점 • ${lecture.professor || '교수명 미정'}`}
-                                            />
-                                            <ListItemSecondaryAction>
-                                                <Chip
-                                                    label={`${lecture.credits || 3}학점`}
-                                                    size="small"
-                                                    variant="outlined"
-                                                />
-                                            </ListItemSecondaryAction>
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            </AccordionDetails>
-                        </Accordion>
-                    ))}
+                    {/* 강의가 없을 때 */}
+                    {lectures.length === 0 ? (
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<AddIcon />}
+                                onClick={() => onAddLecture(curriculumId, semester)}
+                            >
+                                과목 추가
+                            </Button>
+                        </Box>
+                    ) : (
+                        <>
+                            {/* 강의가 있을 때: 기존 카테고리별 렌더링 */}
+                            {Array.from(
+                                lectures.reduce((categories, lecture) => {
+                                    const category = categorizeLecture(lecture);
+                                    if (!categories.has(category)) categories.set(category, []);
+                                    categories.get(category)!.push(lecture);
+                                    return categories;
+                                }, new Map<string, CurriculumLecture[]>())
+                            ).map(([category, categoryLectures]) => (
+                                <Accordion key={category} sx={{ mb: 1 }}>
+                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <CategoryIcon>{getCategoryIcon(category)}</CategoryIcon>
+                                            <Typography variant="subtitle1" fontWeight="medium">
+                                                {category} ({categoryLectures.length}과목)
+                                            </Typography>
+                                        </Box>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        <List dense>
+                                            {categoryLectures.map((lecture, index) => {
+                                                const statusChip = getStatusChip(lecture);
+                                                return (
+                                                    <ListItem
+                                                        key={index}
+                                                        button
+                                                        onClick={() => onLectureClick(lecture)}
+                                                    >
+                                                        <ListItemIcon>{getStatusIcon(lecture)}</ListItemIcon>
+                                                        <ListItemText
+                                                            primary={
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                    <Typography>{lecture.name}</Typography>
+                                                                    <Chip
+                                                                        label={statusChip.label}
+                                                                        size="small"
+                                                                        color={statusChip.color}
+                                                                        variant="outlined"
+                                                                    />
+                                                                </Box>
+                                                            }
+                                                        />
+                                                    </ListItem>
+                                                );
+                                            })}
+                                        </List>
+                                    </AccordionDetails>
+                                </Accordion>
+                            ))}
 
-                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<AddIcon />}
-                            onClick={() => onAddLecture(curriculumId, semester)}
-                            disabled={isCompleted}
-                        >
-                            과목 추가
-                        </Button>
-                    </Box>
+                            {/* 과목 추가 버튼 */}
+                            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => onAddLecture(curriculumId, semester)}
+                                >
+                                    과목 추가
+                                </Button>
+                            </Box>
+                        </>
+                    )}
                 </Box>
             </CardComponent>
         </Zoom>
     );
-};
+}; 
 
 interface CurriculumTimelineProps {
     curriculum: CurriculumWithStats;
-    onAddLecture: (curriculumId: number, semester: number) => void;
+    currentSemester: string;
+    userProfile?: any;
+    onAddLecture: (curriculumId: number, semester: string) => void;
     onEdit: (curriculum: CurriculumType) => void;
     onDelete: (id: number) => void;
     onCreateSchedule: (curriculum: CurriculumType) => void;
+    onLectureClick: (lecture: CurriculumLecture) => void;
+    onAddSemester: (curriculumId: number, grade: number, semester: number) => void;
 }
 
 const CurriculumTimeline: React.FC<CurriculumTimelineProps> = ({
     curriculum,
+    currentSemester,
+    userProfile,
     onAddLecture,
     onEdit,
     onDelete,
     onCreateSchedule,
+    onLectureClick,
+    onAddSemester,
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-    // 현재 학기 계산 (예: 2학년 1학기 = 3학기)
-    const currentSemester = 3; // 임시로 설정, 실제로는 사용자 정보에서 가져와야 함
 
     const lectures = curriculum.lectures || [];
     const relevantLectures = lectures.filter(lecture => lecture.curri_id === curriculum.id);
 
     // 학기별로 과목 분류
-    const semesterMap = new Map<number, Lecture[]>();
-    relevantLectures.forEach(lecture => {
-        if (!semesterMap.has(lecture.semester)) {
-            semesterMap.set(lecture.semester, []);
+    const semesterMap = new Map<string, CurriculumLecture[]>();
+    lectures.forEach(lecture => {
+        const semesterKey = `${lecture.grade}-${lecture.semester}`;
+        if (!semesterMap.has(semesterKey)) {
+        semesterMap.set(semesterKey, []);
         }
-        semesterMap.get(lecture.semester)!.push(lecture);
+        semesterMap.get(semesterKey)!.push(lecture);
     });
 
-    const totalCredits = relevantLectures.reduce((sum, lecture) => sum + (lecture.credits || 3), 0);
-    const completedLectures = relevantLectures.filter(lecture => lecture.status === 'completed').length;
-    const completionRate = relevantLectures.length > 0 ? (completedLectures / relevantLectures.length) * 100 : 0;
+    const getNextSemester = (
+        lectures: CurriculumLecture[],
+        extraSemesters: { grade: number; semester: number }[] = []
+    ) => {
+        const allSemesters = [
+            ...lectures.map(l => ({ grade: l.grade, semester: Number(l.semester) })),
+            ...extraSemesters,
+        ];
+
+        if (allSemesters.length === 0) {
+            return { grade: 5, semester: 1 };
+        }
+
+        const last = allSemesters.reduce((latest, cur) => {
+            if (cur.grade > latest.grade) return cur;
+            if (cur.grade === latest.grade && cur.semester > latest.semester) return cur;
+            return latest;
+        });
+
+        let nextGrade = last.grade;
+        let nextSemester = last.semester;
+
+        if (nextSemester === 1) {
+            nextSemester = 2;
+        } else if (nextSemester === 2) {
+            nextGrade += 1;
+            nextSemester = 1;
+        }
+
+        return { grade: nextGrade, semester: nextSemester };
+    };
+
+    const nextSem = getNextSemester(lectures, curriculum.extraSemesters ?? []);
+    const totalCredits = curriculum.total_credits || 0;
+    const completedLectures = lectures.filter(lecture => lecture.isCompleted).length;
+    const completionRate = lectures.length > 0 ? (completedLectures / lectures.length) * 100 : 0;
+
+    const [currentGrade, currentSem] = currentSemester.split('-').map(Number);
+
+    const allSemesters = [];
+    for (let grade = 1; grade <= 4; grade++) {
+        for (let sem = 1; sem <= 2; sem++) {
+            allSemesters.push(`${grade}-${sem}`);
+        }
+    }
+
+    const statusStats = useMemo(() => {
+        const [currentGrade, currentSem] = currentSemester.split('-').map(Number);
+        
+        const stats = {
+            completed: 0,
+            current: 0,
+            planned: 0,
+            offTrack: 0
+        };
+        
+        relevantLectures.forEach(lecture => {
+            const status = lecture.status as 'completed' | 'current' | 'planned' | 'off-track';
+            switch (status) {
+                case 'completed':
+                    stats.completed++;
+                    break;
+                case 'current':
+                    stats.current++;
+                    break;
+                case 'planned':
+                    stats.planned++;
+                    break;
+                case 'off-track':
+                    stats.offTrack++;
+                    break;
+            }
+        });
+        
+        return stats;
+    }, [relevantLectures, currentSemester]);
 
     return (
         <Box sx={{ mb: 4 }}>
@@ -497,7 +641,10 @@ const CurriculumTimeline: React.FC<CurriculumTimelineProps> = ({
                                 📚 {curriculum.name}
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
-                                현재 위치: {getSemesterLabel(currentSemester)}학기 ({getSemesterYear(currentSemester)}년 {currentSemester % 2 === 0 ? '2' : '1'}학기)
+                                현재 학기: {currentGrade}학년 {currentSem}학기 
+                                {userProfile && (
+                                    <> • {userProfile.name || ''}님 ({userProfile.major || ''})</>
+                                )}
                             </Typography>
                         </Box>
                     </Box>
@@ -558,39 +705,78 @@ const CurriculumTimeline: React.FC<CurriculumTimelineProps> = ({
                             완료율
                         </Typography>
                         <Typography variant="h6" fontWeight="bold">
-                            {Math.round(completionRate)}%
+                            {Math.round(curriculum.completionRate)}%
                         </Typography>
                     </Box>
                 </Box>
 
                 <ProgressBar
                     variant="determinate"
-                    value={completionRate}
-                    sx={{ height: 10, borderRadius: 5 }}
+                    value={curriculum.completionRate ?? 0}
+                    sx={{
+                        height: 12,
+                        borderRadius: 6,
+                        [`& .MuiLinearProgress-bar`]: {
+                            backgroundColor: theme.palette.primary.main,
+                        },
+                    }}
                 />
             </Paper>
 
             {/* 학기별 카드 */}
             <Grid container spacing={3}>
-                {Array.from(semesterMap.entries())
-                    .sort(([a], [b]) => a - b)
-                    .map(([semester, semesterLectures]) => {
-                        const isCurrent = semester === currentSemester;
-                        const isCompleted = semester < currentSemester;
+                {[...semesterMap.keys(), ...(curriculum.extraSemesters ?? []).map(s => `${s.grade}-${s.semester}`)]
+                    .sort((a, b) => {
+                        const [ag, as] = a.split('-').map(Number);
+                        const [bg, bs] = b.split('-').map(Number);
+                        return ag === bg ? as - bs : ag - bg;
+                    })
+                    .map((semesterKey) => {
+                        const [grade, semester] = semesterKey.split('-').map(Number);
+                        const semesterLectures = semesterMap.get(semesterKey) || [];
+                        const isCurrent = grade === currentGrade && semester === currentSem;
+                        const isCompleted = grade < currentGrade || (grade === currentGrade && semester < currentSem);
 
                         return (
-                            <Grid item xs={12} md={6} lg={4} key={semester}>
-                                <SemesterCard
-                                    semester={semester}
-                                    lectures={semesterLectures}
-                                    isCurrent={isCurrent}
-                                    isCompleted={isCompleted}
-                                    onAddLecture={onAddLecture}
-                                    curriculumId={curriculum.id}
-                                />
-                            </Grid>
-                        );
-                    })}
+                        <Grid item xs={12} md={6} lg={4} key={semesterKey}>
+                            <SemesterCard
+                            semester={semesterKey}
+                            lectures={semesterLectures}
+                            isCurrent={isCurrent}
+                            isCompleted={isCompleted}
+                            onAddLecture={onAddLecture}
+                            curriculumId={curriculum.id}
+                            currentUserSemester={currentSemester}
+                            onLectureClick={onLectureClick}
+                            />
+                        </Grid>
+                    );
+                })}
+
+                {/* 새 학기 추가 버튼 */}
+                <Grid item xs={12} md={6} lg={4}>
+                    <Card
+                    sx={{
+                        p: 4,
+                        border: '2px dashed #90caf9',
+                        borderRadius: 3,
+                        textAlign: 'center',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                    }}
+                    >
+                    <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={() => onAddSemester(curriculum.id, nextSem.grade, nextSem.semester)}
+                    >
+                        {`${nextSem.grade}학년 ${nextSem.semester}학기 추가`}
+                    </Button>
+                    </Card>
+                </Grid>
             </Grid>
         </Box>
     );
@@ -598,10 +784,10 @@ const CurriculumTimeline: React.FC<CurriculumTimelineProps> = ({
 
 interface CurriculumHeaderProps {
     search: string;
-    sort: 'recent' | 'name' | 'lectures';
+    sort: 'recent' | 'name';
     showDefaultOnly: boolean;
     onSearchChange: (value: string) => void;
-    onSortChange: (value: 'recent' | 'name' | 'lectures') => void;
+    onSortChange: (value: 'recent' | 'name') => void;
     onShowDefaultOnlyChange: (value: boolean) => void;
     onCreateNew: () => void;
 }
@@ -658,12 +844,11 @@ const CurriculumHeader: React.FC<CurriculumHeaderProps> = ({
                     <InputLabel>정렬</InputLabel>
                     <Select
                         value={sort}
-                        onChange={(e) => onSortChange(e.target.value as 'recent' | 'name' | 'lectures')}
+                        onChange={(e) => onSortChange(e.target.value as 'recent' | 'name')}
                         label="정렬"
                     >
                         <MenuItem value="recent">최신순</MenuItem>
                         <MenuItem value="name">이름순</MenuItem>
-                        <MenuItem value="lectures">과목순</MenuItem>
                     </Select>
                 </FormControl>
 
@@ -692,54 +877,67 @@ const CurriculumPage: React.FC = () => {
     const [addLectureOpen, setAddLectureOpen] = useState(false);
     const [createOpen, setCreateOpen] = useState(false);
     const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumType | null>(null);
-    const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
+    const [selectedLecture, setSelectedLecture] = useState<CurriculumLecture | null>(null);
     const [snackbar, setSnackbar] = useState<SnackbarState>({ open: false, message: '', severity: 'success' });
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+    const [selectedGrade, setSelectedGrade] = useState<number>(1);
+    const [selectedSemester, setSelectedSemester] = useState<'1' | '2' | 'S' | 'W'>('1');
+    const [statusModalOpen, setStatusModalOpen] = useState(false);
 
     // 커리큘럼 생성(챗봇에서 전달) mock 데이터
     const newCurriculum = location.state?.newCurriculum;
 
     // Custom hooks
-    const { curricula, setCurricula, loading, error, loadCurricula, deleteCurriculum } = useCurriculumData();
-    const { search, setSearch, sort, setSort, showDefaultOnly, setShowDefaultOnly, filteredCurricula } = useCurriculumFiltering(curricula);
+    const { curricula, currentSemester, userProfile, setCurricula, loading, error, loadCurricula, deleteCurriculum, showDefaultOnly, setShowDefaultOnly } = useCurriculumData();
+    const { search, setSearch, sort, setSort, filteredCurricula } = useCurriculumFiltering(curricula);
 
-    // Calculate stats for each curriculum (백엔드 모델 구조에 맞게)
+    // 과목 클릭 핸들러
+    const handleLectureClick = useCallback((lecture: CurriculumLecture) => {
+        setSelectedLecture(lecture);
+        setSelectedCurriculum(curricula.find(c => c.id === lecture.curri_id) || null);
+        setStatusModalOpen(true);
+    }, [curricula]);
+
+    const handleStatusUpdate = useCallback((lecture: CurriculumLecture) => {
+        loadCurricula();
+        setSnackbar({ open: true, message: '과목 상태가 업데이트되었습니다.', severity: 'success' });
+    }, [loadCurricula]);
+
+    // Calculate stats for each curriculum
     const curriculaWithStats = useMemo(() => {
         return filteredCurricula.map(curriculum => {
             const lectures = curriculum.lectures || [];
-            // curri_id가 일치하는 강의만 필터링
             const relevantLectures = lectures.filter(lecture => lecture.curri_id === curriculum.id);
             const totalLectures = relevantLectures.length;
 
-            // 학기별 분류 (백엔드 모델 구조에 맞게)
-            const semesterMap = new Map<number, Lecture[]>();
+            const semesterMap = new Map<string, CurriculumLecture[]>();
             relevantLectures.forEach(lecture => {
-                if (!semesterMap.has(lecture.semester)) {
-                    semesterMap.set(lecture.semester, []);
+                const semesterKey = `${lecture.grade}-${lecture.semester}`;
+                if (!semesterMap.has(semesterKey)) {
+                    semesterMap.set(semesterKey, []);
                 }
-                semesterMap.get(lecture.semester)!.push(lecture);
+                semesterMap.get(semesterKey)!.push(lecture);
             });
 
             const semesterBreakdown = Array.from(semesterMap.entries())
                 .map(([semester, semesterLectures]) => ({
                     semester,
                     lectures: semesterLectures,
-                    credits: semesterLectures.length * 3, // 기본 3학점 가정
+                    credits: semesterLectures.reduce((sum, lecture) => sum + (lecture.credits || 0), 0),
                 }))
-                .sort((a, b) => a.semester - b.semester);
+                .sort((a, b) => a.semester.localeCompare(b.semester));
 
-            const totalCredits = semesterBreakdown.reduce((sum, semester) => sum + semester.credits, 0);
-            const completionRate = totalLectures > 0 ? Math.min((totalLectures / 20) * 100, 100) : 0;
-
+            
             return {
                 ...curriculum,
                 totalLectures,
-                totalCredits,
-                completionRate,
+                totalCredits: curriculum.total_credits,
+                completionRate: curriculum.completionRate ?? 0,
                 semesterBreakdown,
             };
         });
     }, [filteredCurricula]);
+
 
     // Highlight on new curriculum with cleanup
     useEffect(() => {
@@ -759,6 +957,25 @@ const CurriculumPage: React.FC = () => {
     }, [error]);
 
     // Event handlers
+    const handleAddSemester = (curriculumId: number, grade: number, semester: number) => {
+        setCurricula(prev =>
+            prev.map(cur => {
+                if (cur.id !== curriculumId) return cur;
+
+                const newSemesterKey = `${grade}-${semester}`;
+                const existing = cur.lectures?.some(l => `${l.grade}-${l.semester}` === newSemesterKey);
+
+                if (existing) return cur;
+
+                return {
+                    ...cur,
+                    lectures: [...(cur.lectures ?? [])],
+                    extraSemesters: [...(cur.extraSemesters ?? []), { grade, semester }],
+                };
+            })
+        );
+    };
+
     const handleDetail = useCallback((curriculum: CurriculumType) => {
         setSelectedCurriculum(curriculum);
         setDetailOpen(true);
@@ -769,8 +986,17 @@ const CurriculumPage: React.FC = () => {
         setEditOpen(true);
     }, []);
 
-    const handleAddLecture = useCallback((curriculumId: number, semester?: number) => {
+    const handleAddLecture = useCallback((curriculumId: number, semester?: string) => {
+        console.log('[DEBUG] handleAddLecture called with semester:', semester);
+
         setSelectedCurriculum(curricula.find(c => c.id === curriculumId) || null);
+
+        if (semester) {
+            const [gradeStr, semStr] = semester.split('-');
+            setSelectedGrade(Number(gradeStr));
+            setSelectedSemester(semStr as '1' | '2' | 'S' | 'W');
+        }
+
         setAddLectureOpen(true);
     }, [curricula]);
 
@@ -808,7 +1034,7 @@ const CurriculumPage: React.FC = () => {
         setSnackbar({ open: true, message: '커리큘럼이 수정되었습니다.', severity: 'success' });
     }, [setCurricula]);
 
-    const handleLectureSuccess = useCallback((lecture: Lecture) => {
+    const handleLectureSuccess = useCallback((lecture: CurriculumLecture) => {
         // 커리큘럼 목록 새로고침
         loadCurricula();
         setSnackbar({ open: true, message: '과목이 저장되었습니다.', severity: 'success' });
@@ -978,10 +1204,14 @@ const CurriculumPage: React.FC = () => {
                             <CurriculumTimeline
                                 key={curriculum.id}
                                 curriculum={curriculum}
+                                currentSemester={currentSemester}
+                                userProfile={userProfile}
                                 onAddLecture={handleAddLecture}
                                 onEdit={handleEdit}
                                 onDelete={(id) => setDeleteDialog({ open: true, id })}
                                 onCreateSchedule={handleCreateSchedule}
+                                onLectureClick={handleLectureClick}
+                                onAddSemester={handleAddSemester}
                             />
                         ))}
                     </Box>
@@ -1053,6 +1283,8 @@ const CurriculumPage: React.FC = () => {
                 open={addLectureOpen}
                 curriculumId={selectedCurriculum?.id || 0}
                 lecture={selectedLecture}
+                grade={selectedGrade}
+                semester={selectedSemester}
                 onClose={() => {
                     setAddLectureOpen(false);
                     setSelectedLecture(null);
@@ -1060,12 +1292,28 @@ const CurriculumPage: React.FC = () => {
                 onSuccess={handleLectureSuccess}
             />
 
+            {/* Lecture Status Modal */}
+            <LectureStatusModal
+                open={statusModalOpen}
+                lecture={selectedLecture}
+                curriculumId={selectedCurriculum?.id || 0}
+                onClose={() => {
+                    setStatusModalOpen(false);
+                    setSelectedLecture(null);
+                }}
+                onSuccess={handleStatusUpdate}
+                onDeleteSuccess={(message) => {
+                    loadCurricula();
+                    setSnackbar({ open: true, message, severity: 'info' });
+                }}
+            />
+
             {/* Snackbar */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={3000}
                 onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
                 <Alert
                     severity={snackbar.severity}

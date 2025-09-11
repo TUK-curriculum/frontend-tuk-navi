@@ -17,17 +17,75 @@ import {
     MenuItem,
     Grid,
 } from '@mui/material';
-import { Add, Edit, Schedule } from '@mui/icons-material';
+import { Add, Edit, Warning } from '@mui/icons-material';
 import { curriculumService } from '../../services/CurriculumService';
-import { Lecture, AddLectureRequest, UpdateLectureRequest } from '../../types/curriculum';
+import { CurriculumLecture, AddLectureRequest, UpdateLectureRequest } from '../../types/curriculum';
 
 interface LectureFormModalProps {
     open: boolean;
     curriculumId: number;
-    lecture?: Lecture | null; // 편집 모드일 때만 제공
+    lecture?: CurriculumLecture | null;
     onClose: () => void;
-    onSuccess: (lecture: Lecture) => void;
+    onSuccess: (lecture: CurriculumLecture) => void;
+    grade: number;
+    semester: '1' | '2' | 'S' | 'W';
 }
+
+interface DuplicateConfirmDialogProps {
+    open: boolean;
+    courseCode: string;
+    courseName: string;
+    onClose: () => void;
+    onConfirm: (asRetake: boolean) => void;
+}
+
+const DuplicateConfirmDialog: React.FC<DuplicateConfirmDialogProps> = ({
+    open,
+    courseCode,
+    courseName,
+    onClose,
+    onConfirm,
+}) => {
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Warning color="warning" />
+                    <Typography variant="h6">
+                        이미 이수한 과목입니다
+                    </Typography>
+                </Box>
+            </DialogTitle>
+            <DialogContent>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    <Typography variant="body1" sx={{ mb: 1 }}>
+                        <strong>{courseName} ({courseCode})</strong>
+                    </Typography>
+                    <Typography variant="body2">
+                        이 과목은 이미 수강내역에 존재합니다. 재수강으로 추가하시겠습니까?
+                    </Typography>
+                </Alert>
+                <Typography variant="body2" color="text.secondary">
+                    • <strong>재수강으로 추가</strong>: 학점은 0점으로 처리되며, 성적 향상을 위한 재수강으로 기록됩니다.
+                    <br />
+                    • <strong>취소</strong>: 과목 추가를 취소하고 폼으로 돌아갑니다.
+                </Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>
+                    취소
+                </Button>
+                <Button 
+                    onClick={() => onConfirm(true)} 
+                    variant="contained" 
+                    color="warning"
+                >
+                    재수강으로 추가
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
 
 const LectureFormModal: React.FC<LectureFormModalProps> = ({
     open,
@@ -35,92 +93,131 @@ const LectureFormModal: React.FC<LectureFormModalProps> = ({
     lecture,
     onClose,
     onSuccess,
+    grade,
+    semester,
 }) => {
     const isEditMode = !!lecture;
 
     const [formData, setFormData] = useState<AddLectureRequest>({
-        courseName: '',
-        dayOfWeek: '',
-        startTime: '',
-        endTime: '',
-        semester: 1,
+        courseCode: '',
+        lect_id: undefined,
+        name: '',
+        credits: 3,
+        type: 'GE',
+        grade,
+        semester,
+        status: 'planned',
+        recordGrade: ''
     });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [duplicateDialog, setDuplicateDialog] = useState({
+        open: false,
+        courseCode: '',
+        courseName: ''
+    });
 
-    // 편집 모드일 때 기존 데이터로 폼 초기화
     useEffect(() => {
         if (lecture) {
             setFormData({
-                courseName: lecture.courseName,
-                dayOfWeek: lecture.dayOfWeek,
-                startTime: lecture.startTime,
-                endTime: lecture.endTime,
+                courseCode: lecture.lectureCode?.code || '',
+                name: lecture.name,
+                credits: lecture.credits,
+                type: lecture.type,
+                grade: lecture.grade,
                 semester: lecture.semester,
+                status: lecture.status === 'off-track' ? 'planned' : (lecture.status || 'planned'),
+                recordGrade: ''
             });
         } else {
             setFormData({
-                courseName: '',
-                dayOfWeek: '',
-                startTime: '',
-                endTime: '',
-                semester: 1,
+                courseCode: '',
+                name: '',
+                credits: 3,
+                type: 'GE',
+                grade,
+                semester,
+                status: 'planned',
+                recordGrade: ''
             });
         }
-    }, [lecture]);
+    }, [lecture, grade, semester]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        await submitLecture(false);
+    };
 
-        // 유효성 검사
-        const errors = curriculumService.validateLectureData(formData);
-        if (errors.length > 0) {
-            setError(errors[0]);
-            return;
-        }
-
+    const submitLecture = async (forceRetaken: boolean = false, confirmDuplicate: boolean = false) => {
         try {
             setLoading(true);
             setError(null);
 
-            let result: Lecture;
+            const submitData = {
+                ...formData,
+                forceRetaken,
+                confirmDuplicate
+            };
+
+            let result: CurriculumLecture;
 
             if (isEditMode && lecture) {
-                // 편집 모드
-                const updateData: UpdateLectureRequest = {
-                    courseName: formData.courseName,
-                    dayOfWeek: formData.dayOfWeek,
-                    startTime: formData.startTime,
-                    endTime: formData.endTime,
-                    semester: formData.semester,
-                };
-                result = await curriculumService.updateLecture(curriculumId, lecture.id, updateData);
+                result = await curriculumService.updateLecture(
+                    curriculumId,
+                    lecture.id,
+                    submitData as UpdateLectureRequest
+                );
             } else {
-                // 추가 모드
-                result = await curriculumService.addLecture(curriculumId, formData);
+                result = await curriculumService.addLecture(curriculumId, submitData);
             }
 
             onSuccess(result);
             handleClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save lecture:', error);
+            
+            // 중복 기록 처리
+            if (error.message?.startsWith('DUPLICATE_RECORD:')) {
+                const [, courseCode, courseName] = error.message.split(':');
+                setDuplicateDialog({
+                    open: true,
+                    courseCode,
+                    courseName
+                });
+                return;
+            }
+            
             setError(error instanceof Error ? error.message : '과목 저장에 실패했습니다.');
         } finally {
             setLoading(false);
         }
     };
 
+    const handleDuplicateConfirm = async (asRetake: boolean) => {
+        setDuplicateDialog({ open: false, courseCode: '', courseName: '' });
+        
+        if (asRetake) {
+            await submitLecture(true, true);
+        }
+    };
+
+    const handleDuplicateClose = () => {
+        setDuplicateDialog({ open: false, courseCode: '', courseName: '' });
+    };
+
     const handleClose = () => {
         setFormData({
-            courseName: '',
-            dayOfWeek: '',
-            startTime: '',
-            endTime: '',
-            semester: 1,
+            name: '',
+            credits: 3,
+            type: 'GE',
+            grade,
+            semester,
+            status: 'planned',
         });
         setError(null);
         setLoading(false);
+        setDuplicateDialog({ open: false, courseCode: '', courseName: '' });
         onClose();
     };
 
@@ -129,168 +226,168 @@ const LectureFormModal: React.FC<LectureFormModalProps> = ({
         if (error) setError(null);
     };
 
-    const validateTimeFormat = (time: string) => {
-        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        return timeRegex.test(time);
-    };
-
-    const handleTimeChange = (field: 'startTime' | 'endTime', value: string) => {
-        if (value && !validateTimeFormat(value)) {
-            setError('시간 형식이 올바르지 않습니다. (HH:MM)');
-            return;
-        }
-        handleInputChange(field, value);
-    };
-
-    const dayOptions = [
-        { value: 'monday', label: '월요일' },
-        { value: 'tuesday', label: '화요일' },
-        { value: 'wednesday', label: '수요일' },
-        { value: 'thursday', label: '목요일' },
-        { value: 'friday', label: '금요일' },
-        { value: 'saturday', label: '토요일' },
-        { value: 'sunday', label: '일요일' }
+    const typeOptions = [
+        { value: 'GR', label: '교양필수' },
+        { value: 'GE', label: '교양선택' },
+        { value: 'MR', label: '전공필수' },
+        { value: 'ME', label: '전공선택' },
+        { value: 'RE', label: '현장연구' },
+        { value: 'FE', label: '자유선택' },
     ];
 
-    const semesterOptions = [
-        { value: 1, label: '1학기' },
-        { value: 2, label: '2학기' },
-        { value: 3, label: '3학기' },
-        { value: 4, label: '4학기' },
-        { value: 5, label: '5학기' },
-        { value: 6, label: '6학기' },
-        { value: 7, label: '7학기' },
-        { value: 8, label: '8학기' },
+    const statusOptions = [
+        { value: 'completed', label: '수강완료' },
+        { value: 'current', label: '수강중' },
+        { value: 'planned', label: '수강예정' },
     ];
 
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <form onSubmit={handleSubmit}>
-                <DialogTitle>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {isEditMode ? <Edit color="primary" /> : <Add color="primary" />}
-                        <Typography variant="h6">
-                            {isEditMode ? '과목 편집' : '과목 추가'}
-                        </Typography>
-                    </Box>
-                </DialogTitle>
-
-                <DialogContent>
-                    <Box sx={{ mt: 2 }}>
-                        {error && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                                {error}
-                            </Alert>
-                        )}
-
-                        <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                                <TextField
-                                    autoFocus
-                                    label="과목명"
-                                    fullWidth
-                                    variant="outlined"
-                                    value={formData.courseName}
-                                    onChange={(e) => handleInputChange('courseName', e.target.value)}
-                                    placeholder="예: 인공지능개론"
-                                    disabled={loading}
-                                    required
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <FormControl fullWidth disabled={loading}>
-                                    <InputLabel>요일</InputLabel>
-                                    <Select
-                                        value={formData.dayOfWeek}
-                                        onChange={(e) => handleInputChange('dayOfWeek', e.target.value)}
-                                        label="요일"
-                                        required
-                                    >
-                                        {dayOptions.map((option) => (
-                                            <MenuItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <FormControl fullWidth disabled={loading}>
-                                    <InputLabel>학기</InputLabel>
-                                    <Select
-                                        value={formData.semester}
-                                        onChange={(e) => handleInputChange('semester', e.target.value as number)}
-                                        label="학기"
-                                        required
-                                    >
-                                        {semesterOptions.map((option) => (
-                                            <MenuItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    label="시작 시간"
-                                    fullWidth
-                                    variant="outlined"
-                                    value={formData.startTime}
-                                    onChange={(e) => handleTimeChange('startTime', e.target.value)}
-                                    placeholder="09:00"
-                                    disabled={loading}
-                                    required
-                                    helperText="HH:MM 형식으로 입력"
-                                />
-                            </Grid>
-
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    label="종료 시간"
-                                    fullWidth
-                                    variant="outlined"
-                                    value={formData.endTime}
-                                    onChange={(e) => handleTimeChange('endTime', e.target.value)}
-                                    placeholder="10:30"
-                                    disabled={loading}
-                                    required
-                                    helperText="HH:MM 형식으로 입력"
-                                />
-                            </Grid>
-                        </Grid>
-
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                            <Typography variant="body2" color="text.secondary">
-                                <strong>입력 예시:</strong><br />
-                                과목명: 인공지능개론<br />
-                                요일: 월요일<br />
-                                시간: 09:00 - 10:30<br />
-                                학기: 3학기
+        <>
+            <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+                <form onSubmit={handleSubmit}>
+                    <DialogTitle>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {isEditMode ? <Edit color="primary" /> : <Add color="primary" />}
+                            <Typography variant="h6">
+                                {isEditMode ? '과목 편집' : '과목 추가'}
                             </Typography>
                         </Box>
-                    </Box>
-                </DialogContent>
+                    </DialogTitle>
 
-                <DialogActions>
-                    <Button onClick={handleClose} disabled={loading}>
-                        취소
-                    </Button>
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        disabled={loading || !formData.courseName.trim() || !formData.dayOfWeek || !formData.startTime || !formData.endTime}
-                        startIcon={loading ? <CircularProgress size={16} /> : (isEditMode ? <Edit /> : <Add />)}
-                    >
-                        {loading ? '저장 중...' : (isEditMode ? '과목 수정' : '과목 추가')}
-                    </Button>
-                </DialogActions>
-            </form>
-        </Dialog>
+                    <DialogContent>
+                        <Box sx={{ mt: 2 }}>
+                            {error && (
+                                <Alert severity="error" sx={{ mb: 2 }}>
+                                    {error}
+                                </Alert>
+                            )}
+
+                            <Grid container spacing={2}>
+                                <Grid item xs={12}>
+                                    <TextField
+                                        label="강의 코드"
+                                        fullWidth
+                                        variant="outlined"
+                                        value={formData.courseCode || ''}
+                                        onChange={(e) => handleInputChange('courseCode', e.target.value)}
+                                        placeholder="예: ACS32022"
+                                        disabled={loading}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={12}>
+                                    <TextField
+                                        autoFocus
+                                        label="강의명"
+                                        fullWidth
+                                        variant="outlined"
+                                        value={formData.name}
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
+                                        placeholder="예: 인공지능"
+                                        disabled={loading}
+                                        required
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <TextField
+                                        label="학점"
+                                        type="number"
+                                        fullWidth
+                                        variant="outlined"
+                                        value={formData.credits}
+                                        onChange={(e) => {
+                                        const value = Math.max(1, Math.min(3, Number(e.target.value))); 
+                                        handleInputChange('credits', value);
+                                        }}
+                                        disabled={loading}
+                                        required
+                                        inputProps={{ min: 1, max: 3 }}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <FormControl fullWidth disabled={loading}>
+                                        <InputLabel>이수 구분</InputLabel>
+                                        <Select
+                                            value={formData.type}
+                                            onChange={(e) => handleInputChange('type', e.target.value)}
+                                            label="이수 구분"
+                                            required
+                                        >
+                                            {typeOptions.map((option) => (
+                                                <MenuItem key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <FormControl fullWidth disabled={loading}>
+                                    <InputLabel>수강 상태</InputLabel>
+                                        <Select
+                                            value={formData.status || 'planned'}
+                                            onChange={(e) => handleInputChange('status', e.target.value)}
+                                            label="수강 상태"
+                                            required
+                                        >
+                                            {statusOptions.map((option) => (
+                                            <MenuItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <FormControl fullWidth disabled={formData.status !== 'completed' || loading}>
+                                        <InputLabel>성적</InputLabel>
+                                        <Select
+                                            value={formData.recordGrade || ''}
+                                            onChange={(e) => handleInputChange('recordGrade', e.target.value)}
+                                            label="성적"
+                                        >
+                                        {['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P', 'NP'].map((g) => (
+                                            <MenuItem key={g} value={g}>
+                                            {g}
+                                            </MenuItem>
+                                        ))}
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+                        </Box>
+                    </DialogContent>
+
+                    <DialogActions>
+                        <Button onClick={handleClose} disabled={loading}>
+                            취소
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading || !formData.name.trim()}
+                            startIcon={loading ? <CircularProgress size={16} /> : (isEditMode ? <Edit /> : <Add />)}
+                        >
+                            {loading ? '저장 중...' : (isEditMode ? '과목 수정' : '과목 추가')}
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+
+            {/* 중복 확인 */}
+            <DuplicateConfirmDialog
+                open={duplicateDialog.open}
+                courseCode={duplicateDialog.courseCode}
+                courseName={duplicateDialog.courseName}
+                onClose={handleDuplicateClose}
+                onConfirm={handleDuplicateConfirm}
+            />
+        </>
     );
 };
 
-export default LectureFormModal; 
+export default LectureFormModal;
