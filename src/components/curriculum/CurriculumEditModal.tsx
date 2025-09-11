@@ -62,13 +62,20 @@ const CurriculumEditModal: React.FC<CurriculumEditModalProps> = ({
             setLoading(true);
             setError(null);
 
-            // 현재는 백엔드에 커리큘럼 수정 API가 없으므로
-            // 프론트엔드에서만 상태 업데이트
-            const updatedCurriculum = {
-                ...curriculum,
-                name: formData.name,
-                isDefault: formData.isDefault,
-            };
+            // 커리큘럼 이름 업데이트
+            const updatedCurriculum = await curriculumService.updateCurriculum(curriculum.id, {
+                name: formData.name.trim(),
+                description: curriculum.description,
+                conditions: curriculum.conditions,
+            });
+
+            // 기본 커리큘럼 설정
+            if (formData.isDefault && !curriculum.isDefault) {
+                await curriculumService.setDefaultCurriculum(curriculum.id);
+                updatedCurriculum.isDefault = true;
+            } else if (!formData.isDefault && curriculum.isDefault) {
+                updatedCurriculum.isDefault = false;
+            }
 
             onSuccess(updatedCurriculum);
             handleClose();

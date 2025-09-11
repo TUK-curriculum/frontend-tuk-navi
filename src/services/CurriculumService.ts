@@ -13,22 +13,31 @@ import {
     DeleteResponse,
     CurriculumWithStats,
     SemesterBreakdown,
+    CurriculumLecture,
 } from '../types/curriculum';
 
 class CurriculumService {
     private readonly baseUrl = '/curriculums';
 
     /**
- * 사용자의 모든 커리큘럼 조회
- */
-    async getCurriculums(): Promise<Curriculum[]> {
+     * 사용자의 모든 커리큘럼 조회 (Records 정보와 함께)
+     */
+    async getCurriculums(defaultOnly: boolean = false): Promise<Curriculum[]> {
         try {
-            const response = await apiClient.get<{ success: boolean; curriculums: Curriculum[] }>(this.baseUrl);
-            if (response.data.success) {
-                return response.data.curriculums;
-            } else {
+            const url = defaultOnly
+                ? `${this.baseUrl}?defaultOnly=true`
+                : this.baseUrl;
+                
+            // 커리큘럼 목록 조회
+            const curriculumResponse = await apiClient.get<{ success: boolean; curriculums: Curriculum[] }>(url);
+
+            if (!curriculumResponse.data.success) {
                 throw new Error('커리큘럼 목록을 불러오는데 실패했습니다.');
             }
+
+            // 수강내역 조회하여 이수 상태 매핑
+            const curriculums = await this.enrichWithRecords(curriculumResponse.data.curriculums);
+            return curriculums;
         } catch (error) {
             console.error('Failed to fetch curriculums:', error);
             throw new Error('커리큘럼 목록을 불러오는데 실패했습니다.');
@@ -36,8 +45,30 @@ class CurriculumService {
     }
 
     /**
- * 특정 커리큘럼 상세 조회
- */
+     * 수강내역 정보와 함께 커리큘럼 정보 수정
+     */
+    private async enrichWithRecords(curriculums: Curriculum[]): Promise<Curriculum[]> {
+        try {
+            const recordsResponse = await apiClient.get('/records');
+            const records = recordsResponse.data.records || [];
+
+            return curriculums.map(curriculum => ({
+                ...curriculum,
+                lectures: curriculum.lectures?.map(lecture => ({
+                    ...lecture,
+                    courseName: lecture.name
+                }))
+            }));
+        } catch (error) {
+            console.error('Failed to fetch records:', error);
+            return curriculums;
+        }
+    }
+
+
+    /**
+     * 특정 커리큘럼 상세 조회
+     */
     async getCurriculumById(curriculumId: number): Promise<Curriculum> {
         try {
             const response = await apiClient.get<{ success: boolean; curriculum: Curriculum }>(`${this.baseUrl}/${curriculumId}`);
@@ -53,8 +84,8 @@ class CurriculumService {
     }
 
     /**
- * 새 커리큘럼 생성
- */
+     * 새 커리큘럼 생성
+     */
     async createCurriculum(data: CreateCurriculumRequest): Promise<Curriculum> {
         try {
             const response = await apiClient.post<{ success: boolean; curriculum: Curriculum }>(this.baseUrl, data);
@@ -70,8 +101,8 @@ class CurriculumService {
     }
 
     /**
- * 커리큘럼 삭제
- */
+     * 커리큘럼 삭제
+     */
     async deleteCurriculum(curriculumId: number): Promise<void> {
         try {
             const response = await apiClient.delete<{ success: boolean; message: string }>(`${this.baseUrl}/${curriculumId}`);
@@ -85,15 +116,16 @@ class CurriculumService {
     }
 
     /**
- * 기본 커리큘럼 설정
- */
-    async setDefaultCurriculum(name: string): Promise<Curriculum> {
+     * 기본 커리큘럼 설정
+     */
+    async setDefaultCurriculum(curriculumId: number): Promise<void> {
         try {
-            const response = await apiClient.post<{ success: boolean; curriculum: Curriculum }>(`${this.baseUrl}/default`, { name });
-            if (response.data.success) {
-                return response.data.curriculum;
-            } else {
-                throw new Error('기본 커리큘럼 설정에 실패했습니다.');
+            const response = await apiClient.post<{ success: boolean; message: string }>(
+                `${this.baseUrl}/default`,
+                { curriculumId }
+            );
+            if (!response.data.success) {
+                throw new Error(response.data.message || '기본 커리큘럼 설정에 실패했습니다.');
             }
         } catch (error) {
             console.error('Failed to set default curriculum:', error);
@@ -121,26 +153,62 @@ class CurriculumService {
     /**
      * 커리큘럼에 과목 추가
      */
-    async addLecture(curriculumId: number, data: AddLectureRequest): Promise<Lecture> {
+    async addLecture(curriculumId: number, data: AddLectureRequest): Promise<CurriculumLecture> {
         try {
-            const response = await apiClient.post<{ success: boolean; lecture: Lecture }>(`${this.baseUrl}/${curriculumId}/lectures`, data);
+            const payload = {
+                lect_id: data.lect_id ?? null,
+                courseCode: data.courseCode || null,
+                name: data.name,
+                credits: data.credits,
+                type: data.type,
+                grade: data.grade,
+                semester: data.semester,
+                status: data.status,
+                recordGrade: data.recordGrade || null, 
+            };
+
+            const response = await apiClient.post<{ success: boolean; lecture: CurriculumLecture }>(
+                `${this.baseUrl}/${curriculumId}/lectures`,
+                payload
+            );
+
             if (response.data.success) {
                 return response.data.lecture;
             } else {
-                throw new Error('과목 추가에 실패했습니다.');
+                throw new Error('강의 추가에 실패했습니다.');
             }
         } catch (error) {
             console.error('Failed to add lecture:', error);
-            throw new Error('과목 추가에 실패했습니다.');
+            throw new Error('강의 추가에 실패했습니다.');
+        }
+    }
+
+    /**
+     * 커리큘럼 이름 수정
+     */
+    async updateCurriculum(curriculumId: number, data: Partial<CreateCurriculumRequest>): Promise<Curriculum> {
+        try {
+            const response = await apiClient.put<{ success: boolean; curriculum: Curriculum }>(
+                `${this.baseUrl}/${curriculumId}`,
+                data
+            );
+            if (response.data.success) {
+                return response.data.curriculum;
+            } else {
+                throw new Error('커리큘럼 수정에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Failed to update curriculum:', error);
+            throw new Error('커리큘럼 수정에 실패했습니다.');
         }
     }
 
     /**
      * 과목 수정
      */
-    async updateLecture(curriculumId: number, lectureId: number, data: UpdateLectureRequest): Promise<Lecture> {
+    async updateLecture(curriculumId: number, lectureId: number, data: UpdateLectureRequest): Promise<CurriculumLecture> {
         try {
-            const response = await apiClient.put<{ success: boolean; updatedLecture: Lecture }>(`${this.baseUrl}/${curriculumId}/lectures/${lectureId}`, data);
+            const response = await apiClient.put<{ success: boolean; updatedLecture: CurriculumLecture }>(`${this.baseUrl}/${curriculumId}/lectures/${lectureId}`, data);
             if (response.data.success) {
                 return response.data.updatedLecture;
             } else {
@@ -168,7 +236,7 @@ class CurriculumService {
     }
 
     /**
-     * 커리큘럼 통계 계산 (백엔드 모델 구조에 맞게)
+     * 커리큘럼 통계 계산
      */
     calculateCurriculumStats(curriculum: Curriculum): CurriculumWithStats {
         const lectures = curriculum.lectures || [];
@@ -176,8 +244,8 @@ class CurriculumService {
         const relevantLectures = lectures.filter(lecture => lecture.curri_id === curriculum.id);
         const totalLectures = relevantLectures.length;
 
-        // 학기별 분류 (백엔드 모델 구조에 맞게)
-        const semesterMap = new Map<number, Lecture[]>();
+        // 학기별 분류
+        const semesterMap = new Map<string, CurriculumLecture[]>();
         relevantLectures.forEach(lecture => {
             if (!semesterMap.has(lecture.semester)) {
                 semesterMap.set(lecture.semester, []);
@@ -189,9 +257,12 @@ class CurriculumService {
             .map(([semester, semesterLectures]) => ({
                 semester,
                 lectures: semesterLectures,
-                credits: semesterLectures.length * 3, // 기본 3학점 가정
+                credits: semesterLectures.reduce((sum, lecture) => sum + lecture.credits, 0),
             }))
-            .sort((a, b) => a.semester - b.semester);
+            .sort((a, b) => {
+                const order = ['1', 'S', '2', 'W'];
+                return order.indexOf(a.semester) - order.indexOf(b.semester);
+            });
 
         const totalCredits = semesterBreakdown.reduce((sum, semester) => sum + semester.credits, 0);
         const completionRate = totalLectures > 0 ? Math.min((totalLectures / 20) * 100, 100) : 0;
@@ -206,7 +277,7 @@ class CurriculumService {
     }
 
     /**
-     * 커리큘럼 필터링 및 정렬 (백엔드 모델 구조에 맞게)
+     * 커리큘럼 필터링 및 정렬
      */
     filterAndSortCurriculums(
         curriculums: Curriculum[],
@@ -216,7 +287,6 @@ class CurriculumService {
     ): Curriculum[] {
         let filtered = curriculums;
 
-        // 검색 필터
         if (search.trim()) {
             const searchLower = search.toLowerCase();
             filtered = filtered.filter(curriculum =>
@@ -224,17 +294,15 @@ class CurriculumService {
             );
         }
 
-        // 기본 커리큘럼만 표시
         if (showDefaultOnly) {
             filtered = filtered.filter(curriculum => curriculum.isDefault);
         }
 
-        // 정렬
         switch (sort) {
             case 'recent':
                 filtered.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || 0).getTime();
-                    const dateB = new Date(b.createdAt || 0).getTime();
+                    const dateA = new Date(a.created_at || 0).getTime();
+                    const dateB = new Date(b.created_at || 0).getTime();
                     return dateB - dateA;
                 });
                 break;
@@ -243,9 +311,8 @@ class CurriculumService {
                 break;
             case 'lectures':
                 filtered.sort((a, b) => {
-                    // curri_id가 일치하는 강의만 카운트
-                    const lecturesA = a.lectures?.filter(lecture => lecture.curri_id === a.id).length || 0;
-                    const lecturesB = b.lectures?.filter(lecture => lecture.curri_id === b.id).length || 0;
+                    const lecturesA = a.lectures?.length || 0;
+                    const lecturesB = b.lectures?.length || 0;
                     return lecturesB - lecturesA;
                 });
                 break;
@@ -274,43 +341,26 @@ class CurriculumService {
     validateLectureData(data: AddLectureRequest): string[] {
         const errors: string[] = [];
 
-        if (!data.courseName?.trim()) {
+        if (!data.name?.trim()) {
             errors.push('과목명을 입력해주세요.');
         }
 
-        if (!data.dayOfWeek) {
-            errors.push('요일을 선택해주세요.');
+        if (!data.credits || data.credits < 1) {
+            errors.push('학점을 입력해주세요.');
         }
 
-        if (!data.startTime) {
-            errors.push('시작 시간을 입력해주세요.');
-        }
-
-        if (!data.endTime) {
-            errors.push('종료 시간을 입력해주세요.');
-        }
-
-        if (!data.semester || data.semester < 1) {
+        if (!data.semester) {
             errors.push('학기를 선택해주세요.');
         }
 
-        // 시간 형식 검증
-        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (data.startTime && !timeRegex.test(data.startTime)) {
-            errors.push('시작 시간 형식이 올바르지 않습니다. (HH:MM)');
+        const validSemesters = ['1', '2', 'S', 'W'];
+        if (!validSemesters.includes(data.semester)) {
+            errors.push('올바른 학기를 선택해주세요.');
         }
 
-        if (data.endTime && !timeRegex.test(data.endTime)) {
-            errors.push('종료 시간 형식이 올바르지 않습니다. (HH:MM)');
-        }
-
-        // 시작 시간이 종료 시간보다 늦은지 검증
-        if (data.startTime && data.endTime) {
-            const start = new Date(`2000-01-01T${data.startTime}:00`);
-            const end = new Date(`2000-01-01T${data.endTime}:00`);
-            if (start >= end) {
-                errors.push('시작 시간은 종료 시간보다 빨라야 합니다.');
-            }
+        const validTypes = ['GR', 'GE', 'MR', 'ME', 'RE', 'FE'];
+        if (!validTypes.includes(data.type)) {
+            errors.push('올바른 과목 타입을 선택해주세요.');
         }
 
         return errors;
