@@ -54,6 +54,24 @@ const DEPARTMENTS = [
     '기타',
 ] as const;
 
+// 전공 표기(예: "컴퓨터공학전공")를 셀렉트 옵션(예: "컴퓨터공학과")로 정규화
+const normalizeDepartment = (raw?: string): string => {
+    if (!raw) return '';
+    // 이미 옵션에 있는 경우 그대로 반환
+    if ((DEPARTMENTS as readonly string[]).includes(raw)) return raw;
+
+    // "…전공" → "…과" 혹은 "…학과"로 보정
+    if (raw.endsWith('전공')) {
+        const base = raw.slice(0, -2); // "전공" 제거
+        // 공학, 과 등 어미에 따라 보정
+        const candidate = base.endsWith('학') ? `${base}과` : `${base}학과`;
+        if ((DEPARTMENTS as readonly string[]).includes(candidate)) return candidate;
+        return '기타';
+    }
+
+    return '기타';
+};
+
 const YEARS = ['1학년', '2학년', '3학년', '4학년', '5학년 이상'] as const;
 
 const CAREERS = [
@@ -357,12 +375,30 @@ export default function InterestSelection({
     // 회원가입 시 입력한 기본 정보 자동 설정 (백엔드에서 조회)
     useEffect(() => {
         const loadUserProfile = async () => {
-            if (!user?.email || isProfileLoaded) return;
+            if (isProfileLoaded) return;
 
             try {
                 // 백엔드에서 실제 프로필 정보 조회
                 const { apiService } = await import('../services/ApiService');
                 const profile = await apiService.getProfile();
+
+                // profile이 없을 수 있으므로 명시적으로 처리
+                if (!profile) {
+                    const fallbackData = {
+                        name: user?.name || '',
+                        email: user?.email || '',
+                        studentId: (user?.profile as any)?.studentId || '',
+                        department: normalizeDepartment((user?.profile as any)?.major || ''),
+                        year: (user?.profile as any)?.grade ? `${(user?.profile as any).grade}학년` : ''
+                    };
+
+                    setInfo(prev => ({
+                        ...prev,
+                        ...fallbackData
+                    }));
+                    setIsProfileLoaded(true);
+                    return;
+                }
 
                 console.log('[InterestSelection] Profile loaded from backend:', profile);
                 console.log('[InterestSelection] Current user data:', user);
@@ -372,17 +408,17 @@ export default function InterestSelection({
                 const gradeText = profile.grade ? `${profile.grade}학년` : '';
 
                 const mappedData = {
-                    name: profile.name || user.name || '',
-                    email: profile.email || user.email || '',
-                    studentId: profile.studentId || (user.profile as any)?.studentId || '',
-                    department: profile.major || (user.profile as any)?.major || '',
-                    year: gradeText || ((user.profile as any)?.grade ? `${(user.profile as any).grade}학년` : ''),
+                    name: profile.name || user?.name || '',
+                    email: profile.email || user?.email || '',
+                    studentId: profile.studentId || (user?.profile as any)?.studentId || '',
+                    department: normalizeDepartment(profile.major || (user?.profile as any)?.major || ''),
+                    year: gradeText || ((user?.profile as any)?.grade ? `${(user?.profile as any).grade}학년` : ''),
                 };
 
                 console.log('[InterestSelection] Backend profile studentId:', profile.studentId);
                 console.log('[InterestSelection] Backend profile grade:', profile.grade);
-                console.log('[InterestSelection] User profile studentId:', (user.profile as any)?.studentId);
-                console.log('[InterestSelection] User profile grade:', (user.profile as any)?.grade);
+                console.log('[InterestSelection] User profile studentId:', (user?.profile as any)?.studentId);
+                console.log('[InterestSelection] User profile grade:', (user?.profile as any)?.grade);
                 console.log('[InterestSelection] Final mapped data:', mappedData);
                 console.log('[InterestSelection] Previous info state:', info);
 
@@ -401,11 +437,11 @@ export default function InterestSelection({
 
                 // 백엔드 실패 시 AuthContext의 user 정보 또는 테스트 데이터 사용
                 const fallbackData = {
-                    name: user.name || '박진한',
-                    email: user.email || 'test@example.com',
-                    studentId: (user.profile as any)?.studentId || '2021123456',
-                    department: (user.profile as any)?.major || '컴퓨터공학과',
-                    year: (user.profile as any)?.grade ? `${(user.profile as any).grade}학년` : '3학년',
+                    name: user?.name || '박진한',
+                    email: user?.email || 'test@example.com',
+                    studentId: (user?.profile as any)?.studentId || '2021123456',
+                    department: normalizeDepartment((user?.profile as any)?.major || '컴퓨터공학과'),
+                    year: (user?.profile as any)?.grade ? `${(user?.profile as any).grade}학년` : '3학년',
                 };
 
                 console.log('[InterestSelection] Using fallback data:', fallbackData);
