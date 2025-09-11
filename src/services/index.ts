@@ -7,6 +7,7 @@ export { notificationService } from './NotificationService';
 export { chatService } from './ChatService';
 export { graduationService } from './GraduationService';
 export { curriculumService } from './CurriculumService';
+export { professorService } from './ProfessorService';
 
 // Export types if needed by components
 export type { UserSearchParams } from './UserService';
