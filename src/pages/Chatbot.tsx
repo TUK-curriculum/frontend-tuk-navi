@@ -53,7 +53,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
-    
+
     const [messages, setMessages] = useState<Message[]>([
         { sender: "bot", text: "안녕하세요! 무엇을 도와드릴까요?" }
     ]);
@@ -90,17 +90,17 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         socket.onmessage = (event: MessageEvent): void => {
             console.log("WebSocket 메시지 수신:", event.data);
             setLoading(false);
-            
+
             try {
                 let messageData = event.data;
-                
+
                 // 유니코드 디코딩
                 if (typeof messageData === 'string' && messageData.includes('\\u')) {
                     try {
                         // JSON.parse로 파싱하여 유니코드 디코딩
                         const parsed = JSON.parse(messageData);
                         console.log("1차 파싱 완료:", parsed);
-                        
+
                         // message 필드가 유니코드 이스케이프된 경우 추가 디코딩
                         if (parsed.message && typeof parsed.message === 'string' && parsed.message.includes('\\u')) {
                             try {
@@ -110,7 +110,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 console.log("메시지 유니코드 디코딩 실패, 원본 사용");
                             }
                         }
-                        
+
                         messageData = parsed;
                     } catch (e) {
                         console.log("JSON 파싱 실패:", e);
@@ -124,7 +124,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
 
                 const data: WebSocketMessage = messageData;
                 console.log("최종 파싱된 데이터:", data);
-                
+
                 if (data.message) {
                     console.log("봇 메시지 추가:", data.message);
                     setMessages(prev => {
@@ -148,7 +148,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
             } catch (error) {
                 console.error("메시지 파싱 오류:", error);
                 console.error("원본 데이터:", event.data);
-                
+
                 // JSON 파싱이 실패하면 원본 텍스트 그대로 출력
                 if (typeof event.data === 'string') {
                     setMessages(prev => [...prev, { sender: "bot" as const, text: event.data }]);
@@ -173,7 +173,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         const userMessage = input;
         setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
         setInput("");
-        
+
         // 로딩 상태 추가 
         setLoading(true);
 
@@ -215,11 +215,16 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     useEffect(() => {
         connectWebSocket();
 
+        // 페이지 진입 시 바디 스크롤 비활성화, 이탈 시 복원
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
         return () => {
             if (socket) {
                 socket.close();
                 socket = null;
             }
+            document.body.style.overflow = previousOverflow;
         };
     }, []);
 
@@ -232,11 +237,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         if (msg.sender === "bot") {
             // 조건 선택 메시지인지 확인
             const isConditionMessage = msg.text.includes("조건을 모두 선택해 주세요") || msg.text.includes("조건:");
-            
+
             if (isConditionMessage) {
                 // 조건 추출
                 const conditions = ["졸업", "재수강", "선호 교수", "팀플 제외"];
-                
+
                 return (
                     <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
                         <img
@@ -256,15 +261,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 <br />
                                 <div>관심 분야 외의 과목은 아래 조건으로 설계됩니다.</div>
                             </div>
-                            
+
                             <Box sx={{ mb: 2 }}>
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                                     {conditions.map((condition) => (
                                         <button
                                             key={condition}
                                             onClick={() => {
-                                                setSelectedConditions(prev => 
-                                                    prev.includes(condition) 
+                                                setSelectedConditions(prev =>
+                                                    prev.includes(condition)
                                                         ? prev.filter(c => c !== condition)
                                                         : [...prev, condition]
                                                 );
@@ -272,14 +277,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                             style={{
                                                 padding: '8px 16px',
                                                 borderRadius: '20px',
-                                                border: selectedConditions.includes(condition) 
-                                                    ? '2px solid #1976d2' 
+                                                border: selectedConditions.includes(condition)
+                                                    ? '2px solid #1976d2'
                                                     : '2px solid #e0e0e0',
-                                                backgroundColor: selectedConditions.includes(condition) 
-                                                    ? '#e3f2fd' 
+                                                backgroundColor: selectedConditions.includes(condition)
+                                                    ? '#e3f2fd'
                                                     : '#ffffff',
-                                                color: selectedConditions.includes(condition) 
-                                                    ? '#1976d2' 
+                                                color: selectedConditions.includes(condition)
+                                                    ? '#1976d2'
                                                     : '#666666',
                                                 cursor: 'pointer',
                                                 fontSize: '14px',
@@ -290,24 +295,24 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                             {condition}
                                         </button>
                                     ))}
-                                    <img 
-                                        src={check} 
-                                        alt="조건 확인" 
+                                    <img
+                                        src={check}
+                                        alt="조건 확인"
                                         onClick={() => {
                                             if (selectedConditions.length === 0) {
                                                 alert('최소 하나의 조건을 선택해주세요.');
                                                 return;
                                             }
-                                            
+
                                             // 선택된 조건들을 서버로 전송
                                             const conditionsText = selectedConditions.join(", ");
-                                            
+
                                             // 사용자 메시지로 선택 결과 추가
-                                            setMessages(prev => [...prev, { 
-                                                sender: "user", 
-                                                text: `선택한 조건: ${conditionsText}` 
+                                            setMessages(prev => [...prev, {
+                                                sender: "user",
+                                                text: `선택한 조건: ${conditionsText}`
                                             }]);
-                                            
+
                                             // WebSocket으로 전송
                                             if (socket && socket.readyState === WebSocket.OPEN) {
                                                 socket.send(conditionsText);
@@ -316,15 +321,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                                 messageQueue.push(conditionsText);
                                                 if (!reconnecting.current) connectWebSocket();
                                             }
-                                            
+
                                             // 선택된 조건 초기화 
                                             setSelectedConditions([]);
                                         }}
-                                        style={{ 
-                                            width: '32px', 
+                                        style={{
+                                            width: '32px',
                                             height: '32px',
                                             cursor: 'pointer'
-                                        }} 
+                                        }}
                                     />
                                 </Box>
                             </Box>
@@ -347,10 +352,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                             }}
                         />
                         <MessageBubble from="ai">
-                            <div 
-                                dangerouslySetInnerHTML={{ 
-                                    __html: msg.text.replace(/\n/g, "<br>") 
-                                }} 
+                            <div
+                                dangerouslySetInnerHTML={{
+                                    __html: msg.text.replace(/\n/g, "<br>")
+                                }}
                             />
                         </MessageBubble>
                     </Box>
@@ -366,14 +371,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     };
 
     return (
-        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc', overflow: 'hidden' }}>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <Box
                     sx={{
                         width: '100%',
                         maxWidth: 1200,
-                        height: '80vh',
-                        minHeight: 750,
+                        height: 'calc(100vh - 160px)',
+                        minHeight: 600,
                         background: '#fff',
                         borderRadius: 4,
                         boxShadow: '0 8px 32px 0 rgba(80,110,240,0.08)',
@@ -381,7 +386,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         flexDirection: 'column',
                         overflow: 'hidden',
                         position: 'relative',
-                        margin: '55px auto 0 auto',
+                        margin: '120px auto 40px auto',
                     }}
                 >
                     {/* 상단 바 - 서비스스러운 디자인 */}
