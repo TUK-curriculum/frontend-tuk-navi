@@ -136,31 +136,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 const userEmail = localStorage.getItem('userEmail');
 
                 if (accessToken && userEmail) {
-                    // 백엔드에서 userId를 가져오는 로직 필요 (예: 토큰 디코딩 또는 profile fetch)
-                    let userId = '';
                     try {
                         const { userRepository } = await import('../repositories/UserRepository');
                         const profileData = await userRepository.getProfile();
-                        userId = profileData?.userId || '';
+
+                        const userWithProfile = {
+                            id: profileData?.userId || userEmail,
+                            userId: profileData?.userId || userEmail,
+                            name: profileData?.name || profileData?.email || userEmail,
+                            email: profileData?.email || userEmail,
+                            profile: profileData as any
+                        };
+                        setUser(userWithProfile);
+                        await initializeUserDataForAuth(userEmail, profileData);
                     } catch (e) {
-                        // fallback: id를 email로 대체
-                        userId = userEmail;
+                        // 백엔드 실패 시 최소한의 정보로 폴백
+                        const userWithProfile = {
+                            id: userEmail,
+                            userId: userEmail,
+                            name: userEmail,
+                            email: userEmail,
+                            profile: {
+                                name: userEmail,
+                                studentId: '',
+                                major: '',
+                                grade: 1,
+                                semester: 1
+                            }
+                        };
+                        setUser(userWithProfile);
+                        await initializeUserDataForAuth(userEmail);
                     }
-                    const userWithProfile = {
-                        id: userId,
-                        userId: userId,
-                        name: '사용자',
-                        email: userEmail,
-                        profile: {
-                            name: '사용자',
-                            studentId: '',
-                            major: '',
-                            grade: 1,
-                            semester: 1
-                        }
-                    };
-                    setUser(userWithProfile);
-                    await initializeUserDataForAuth(userEmail);
                 }
             } catch (error) {
                 console.error('인증 초기화 실패:', error);
@@ -232,7 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         enrollmentYear?: number,
         graduationYear?: number
     ) => {
-        console.log('[AuthContext] Starting register for:', email);        
+        console.log('[AuthContext] Starting register for:', email);
         setIsLoading(true);
         try {
             let gradeNumber: number = 1;

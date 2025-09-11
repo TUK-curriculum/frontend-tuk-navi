@@ -46,7 +46,7 @@ class UserRepository extends BaseRepository {
         try {
             const response = await apiClient.get<UserProfileResponse>('/profile');
             console.log('[UserRepository] Profile fetched successfully:', response.data);
-            return response.data;
+            return response.data.data; // unwrap ApiResponse
         } catch (error) {
             console.error('[UserRepository] Failed to fetch profile:', error);
             throw error;
