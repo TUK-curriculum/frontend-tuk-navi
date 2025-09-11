@@ -6,6 +6,7 @@ import { School, AssignmentTurnedIn, CheckCircle, Warning, Edit, Info, Person, R
 import Graduation from './Graduation';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../utils/apiClient';
+import { apiService } from '../services/ApiService'; 
 
 interface GraduationStudent {
     id: string;
@@ -17,8 +18,8 @@ interface GraduationStudent {
 interface GraduationCredits {
     major: number;
     liberal: number;
-    basic: number;
     total: number;
+    averageGrade?: number;
 }
 
 interface GraduationExtra {
@@ -50,90 +51,90 @@ export default function Profile() {
     const loadDataFromBackend = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             // 프로필 정보 조회 
-            const profileData = await apiClient.profile.getProfile();
+            const profileData = await apiService.getProfile();
             console.log('백엔드 프로필 데이터:', profileData);
-             
+
             if (profileData) {
                 setStudent({
-                    id: profileData.data.studentId || '',
-                    name: profileData.data.name || '정보 없음',
-                    dept: profileData.data.major || '',
-                    curriculumYear: profileData.data.grade || 1
+                    id: profileData.studentId || '',
+                    name: profileData.name || '정보 없음',
+                    dept: profileData.major || '',
+                    curriculumYear: profileData.grade || 1
                 });
                 setBackendConnected(true);
             }
 
-            // 학적 기록 조회
-            const recordsData = await apiClient.records.getAll();
-            console.log('백엔드 학적 데이터:', recordsData);
-            
-            if (recordsData && recordsData.success && recordsData.data) {
-                const records = recordsData.data;
-                let majorCredits = 0;
-                let liberalCredits = 0;
-                let basicCredits = 0;
-                let totalCredits = 0;
-
-                records.forEach((record: any) => {
-                    if (record.grade && ['A+', 'A', 'B+', 'B', 'C+', 'C', 'P'].includes(record.grade)) {
-                        const credits = record.credits || 0;
-                        totalCredits += credits;
-                        
-                        if (record.category === '전공' || record.type === '전공필수' || record.type === '전공선택') {
-                            majorCredits += credits;
-                        } else if (record.category === '교양' || record.type === '교양필수' || record.type === '교양선택') {
-                            liberalCredits += credits;
-                        } else if (record.type === '계열기초') {
-                            basicCredits += credits;
-                        }
-                    }
-                });
-
+            // 학점 요약 조회
+            try {
+                const summary = await apiService.getSummary();
                 setCredits({
-                    major: majorCredits,
-                    liberal: liberalCredits,
-                    basic: basicCredits,
-                    total: totalCredits
+                    major: summary.majorCredits,
+                    liberal: summary.liberalCredits,
+                    total: summary.totalCredits,
+                    averageGrade: summary.averageGrade
                 });
+                console.log('백엔드 학점 요약 데이터:', summary);
+            } catch (summaryError) {
+                console.warn('학점 요약 조회 실패:', summaryError);
             }
 
             // 졸업 요건 조회
             try {
                 const res = await apiClient.graduation.getStatus();
-                console.log('백엔드 졸업 요건 데이터:', res);
-            
+                console.log('졸업 요건 데이터:', res);
+
                 if (res?.success && res.data) {
-                    const { disqualifications = [], flags } = res.data;
+                const { disqualifications = [], flags, pass } = res.data;
 
-                    const english = flags?.englishRequirementMet ?? !disqualifications.includes('어학자격 미취득');
-                    const internship = flags?.internshipCompleted ?? !disqualifications.includes('현장실무교과 미이수');
-                    const capstone = flags?.capstoneCompleted ?? !disqualifications.includes('종합설계 미이수');
+                setCredits(prev => ({
+                    major: pass.major.actual,
+                    liberal: pass.liberal.actual,
+                    total: pass.total.actual,
+                    averageGrade: prev?.averageGrade
+                }));
 
-                    setExtra({ english, internship, capstone });
-                }
+                setRequiredThresholds({
+                    majorRequired: pass.major.threshold,
+                    liberalRequired: pass.liberal.threshold,
+                    totalRequired: pass.total.threshold
+                });
+
+                const english = flags?.englishRequirementMet ?? !disqualifications.includes('어학자격 미취득');
+                const internship = flags?.internshipCompleted ?? !disqualifications.includes('현장실무교과 미이수');
+                const capstone = flags?.capstoneCompleted ?? !disqualifications.includes('종합설계 미이수');
+                setExtra({ english, internship, capstone });
+            }
             } catch (e) {
                 console.warn('졸업 정보 조회 실패:', e);
             }
 
             // 필수과목 조회
             try {
-                const requiredData = await apiClient.graduation.getRequired();
-                console.log('백엔드 필수과목 데이터:', requiredData);
-                
-                if (requiredData?.success && requiredData.data?.missing) {
-                    const courses = requiredData.data.missing.map((course: any) => ({
-                        code: course.courseCode || course.code,
-                        name: course.courseName || course.name,
-                        credit: course.credits || course.credit || 3,
-                        type: course.category || course.type || '필수'
-                    }));
-                    setRequiredCourses(courses);
-                }
+            const requiredData = await apiClient.graduation.getRequired();
+            console.log('백엔드 필수과목 데이터:', requiredData);
+
+            if (requiredData?.success && requiredData.data?.missing) {
+                const seen = new Set<string>();
+                const courses = requiredData.data.missing
+                .map((course: any) => ({
+                    code: course.courseCode || course.code,
+                    name: course.courseName || course.name,
+                    credit: course.credits || course.credit || 3,
+                    type: course.category || '필수'
+                }))
+                .filter((course: any) => {
+                    if (seen.has(course.code)) return false;
+                    seen.add(course.code);
+                    return true;
+                });
+
+                setRequiredCourses(courses);
+            }
             } catch (requiredError) {
-                console.warn('필수과목 정보 조회 실패:', requiredError);
+            console.warn('필수과목 정보 조회 실패:', requiredError);
             }
 
         } catch (err) {
@@ -172,14 +173,16 @@ export default function Profile() {
 
     const completedCodes = requiredCourses.map(c => c.code);
 
-    const totalRequired = 130;
-    const majorRequired = 69;
-    const liberalRequired = 37;
+    const [requiredThresholds, setRequiredThresholds] = useState({
+        totalRequired: 130,
+        majorRequired: 69,
+        liberalRequired: 37,
+    });
+
     const total = credits?.total || 0;
     const major = credits?.major || 0;
     const liberal = credits?.liberal || 0;
-    const basic = credits?.basic || 0;
-    const completionRate = Math.round((total / totalRequired) * 100);
+    const completionRate = Math.round((total / requiredThresholds.totalRequired) * 100);
 
     const handleSave = async () => {
         setLoading(true);
@@ -190,7 +193,7 @@ export default function Profile() {
                 phone: ''
             };
 
-            const result = await apiClient.profile.updateProfile(updates);
+            const result = await apiService.updateProfile(updates);
             console.log('백엔드 저장 성공:', result);
             setSaveStatus('저장되었습니다.');
         } catch (err) {
@@ -288,10 +291,10 @@ export default function Profile() {
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Typography variant="subtitle2">총 이수학점</Typography>
-                                <Typography variant="h5" fontWeight="bold">{total}/{totalRequired}</Typography>
+                                <Typography variant="h5" fontWeight="bold">{total}/{requiredThresholds.totalRequired}</Typography>
                                 <LinearProgress
                                     variant="determinate"
-                                    value={Math.min((total / totalRequired) * 100, 100)}
+                                    value={Math.min((total / requiredThresholds.totalRequired) * 100, 100)}
                                     color="primary"
                                     sx={{ height: 8, borderRadius: 4, mb: 1 }}
                                 />
@@ -299,30 +302,32 @@ export default function Profile() {
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Typography variant="subtitle2">전공 학점</Typography>
-                                <Typography variant="h5" fontWeight="bold">{major}/{majorRequired}</Typography>
+                                <Typography variant="h5" fontWeight="bold">{major}/{requiredThresholds.majorRequired}</Typography>
                                 <LinearProgress
                                     variant="determinate"
-                                    value={Math.min((major / majorRequired) * 100, 100)}
+                                    value={Math.min((major / requiredThresholds.majorRequired) * 100, 100)}
                                     color="secondary"
                                     sx={{ height: 8, borderRadius: 4, mb: 1 }}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
                                 <Typography variant="subtitle2">교양 학점</Typography>
-                                <Typography variant="h5" fontWeight="bold">{liberal}/{liberalRequired}</Typography>
+                                <Typography variant="h5" fontWeight="bold">{liberal}/{requiredThresholds.liberalRequired}</Typography>
                                 <LinearProgress
                                     variant="determinate"
-                                    value={Math.min((liberal / liberalRequired) * 100, 100)}
+                                    value={Math.min((liberal / requiredThresholds.liberalRequired) * 100, 100)}
                                     color="success"
                                     sx={{ height: 8, borderRadius: 4, mb: 1 }}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Typography variant="subtitle2">기초/계열 학점</Typography>
-                                <Typography variant="h5" fontWeight="bold">{basic}</Typography>
+                                <Typography variant="subtitle2">평균 평점</Typography>
+                                <Typography variant="h5" fontWeight="bold">
+                                    {`${credits?.averageGrade ? Number(credits.averageGrade).toFixed(2) : '0'}/4.5`}
+                                </Typography>
                                 <LinearProgress
                                     variant="determinate"
-                                    value={100}
+                                    value={credits?.averageGrade ? (Number(credits.averageGrade) / 4.5) * 100 : 0}
                                     color="info"
                                     sx={{ height: 8, borderRadius: 4, mb: 1 }}
                                 />

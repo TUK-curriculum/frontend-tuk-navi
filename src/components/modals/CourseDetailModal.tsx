@@ -2,17 +2,20 @@ import React from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Typography, Chip, Button, Stack } from '@mui/material';
 import { School, Person, Numbers, CalendarToday, AccessTime, Room } from '@mui/icons-material';
 
-interface Course {
+export type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type CourseType = 'GR' | 'GE' | 'MR' | 'ME' | 'RE' | 'FE';
+
+export interface Course {
     id: string;
-    name: string;
-    code: string;
-    instructor: string;
-    credits: number;
-    day: string;
+    name: string; 
+    code: string; 
+    day: DayKey; 
     startPeriod: number;
     endPeriod: number;
+    credits: number;
     room: string;
-    type: 'required' | 'elective' | 'liberal';
+    type: CourseType;
+    instructor: string;
 }
 
 const dayNames = {
@@ -21,6 +24,8 @@ const dayNames = {
     wednesday: '수요일',
     thursday: '목요일',
     friday: '금요일',
+    saturday: '토요일',
+    sunday: '일요일'
 };
 
 interface CourseDetailModalProps {
@@ -30,11 +35,29 @@ interface CourseDetailModalProps {
     onDelete?: (id: string) => void;
 }
 
-const typeColor = (type: string) =>
-    type === 'required' ? 'error' : type === 'elective' ? 'primary' : 'success';
+const typeColor = (type: CourseType): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {
+    const colorMap: Record<CourseType, "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning"> = {
+        'GR': 'error', 
+        'GE': 'success',
+        'MR': 'error',
+        'ME': 'primary',
+        'RE': 'warning',
+        'FE': 'success'
+    };
+    return colorMap[type] || 'primary';
+};
 
-const typeLabel = (type: string) =>
-    type === 'required' ? '필수' : type === 'elective' ? '선택' : '교양';
+const typeLabel = (type: CourseType) => {
+    const labelMap = {
+        'GR': '교양필수',
+        'GE': '교양선택',
+        'MR': '전공필수',
+        'ME': '전공선택',
+        'RE': '현장연구',
+        'FE': '자유선택'
+    };
+    return labelMap[type] || type;
+};
 
 const CourseDetailModal: React.FC<CourseDetailModalProps> = ({ open, course, onClose, onDelete }) => {
     return (

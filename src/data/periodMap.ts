@@ -15,7 +15,7 @@ export const periodMap: Record<number, { start: string; end: string }> = {
     14: { start: '21:40', end: '22:30' },
 };
 
-export const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+export const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 export const periods = [
     { label: '1교시', start: '09:30', end: '10:20' },

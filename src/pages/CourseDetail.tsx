@@ -9,6 +9,8 @@ const dayNames = {
     wednesday: '수요일',
     thursday: '목요일',
     friday: '금요일',
+    saturday: '토요일',
+    sunday: '일요일'
 };
 
 const CourseDetail: React.FC = () => {
