@@ -1,312 +1,405 @@
+// src/pages/AccountSettings.tsx
+
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, Chip, MenuItem, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Grid } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import {
+  Box, Typography, TextField, Button, MenuItem, Alert, Dialog, DialogTitle, 
+  DialogContent, DialogActions, IconButton, Grid, Select, FormControl, InputLabel,
+  CircularProgress, Divider, Chip
+} from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/SeparatedDataContext';
 import EditIcon from '@mui/icons-material/Edit';
-import InterestSelection from './InterestSelection';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import { apiService } from '../services/ApiService';
 
-const grades = ['1학년', '2학년', '3학년', '4학년', '졸업생'];
-const interestsList = [
-    'AI/머신러닝', '데이터분석', '정보보안', '웹개발', '모바일앱개발',
-    '게임개발', '클라우드컴퓨팅', '블록체인', 'IoT', '로봇공학',
-    '사이버보안', '네트워크', '데이터베이스', 'UI/UX디자인', '프로젝트관리'
+const grades = [1, 2, 3, 4, 5];
+const semesters = [1, 2];
+
+// 선택 가능 교수 목록
+const availableProfessors = [
+  { id: 115, name: '공기석' },
+  { id: 145, name: '김영곤' },
+  { id: 108, name: '나보균' },
+  { id: 120, name: '노영주' },
+  { id: 101, name: '민정환' }, 
+  { id: 100, name: '박경원' },
+  { id: 127, name: '박성호' },
+  { id: 114, name: '박정민' },
+  { id: 111, name: '방영철' },
+  { id: 109, name: '배유석' },
+  { id: 104, name: '서대영' },
+  { id: 105, name: '오세춘' },
+  { id: 106, name: '이동훈' },
+  { id: 126, name: '이보경' },
+  { id: 124, name: '이상호' },
+  { id: 28, name: '이수길' },
+  { id: 107, name: '이정준' },
+  { id: 137, name: '이진호' },
+  { id: 116, name: '전광일' },
+  { id: 128, name: '정성택' },
+  { id: 118, name: '정의훈' },
+  { id: 117, name: '최우진' },
+  { id: 125, name: '최종필' },
+  { id: 121, name: '최진구' },
+  { id: 401, name: '하재운' },
+  { id: 119, name: '한경숙' },
+  { id: 130, name: '한익주' },
+  { id: 102, name: '허훈식' }
 ];
 
 interface AccountSettingsProps {
-    open: boolean;
-    onClose: () => void;
+  open: boolean;
+  onClose: () => void;
+}
+
+interface ProfileForm {
+  name: string;
+  studentId: string;
+  major: string;
+  grade: number;
+  semester: number;
+  phone: string;
+  completedCredits: number;
+  career: string;
+  industry: string;
+  remainingSemesters: number;
+  maxCreditsPerTerm: number;
+  enrollmentYear: number | null;
+  graduationYear: number | null;
 }
 
 const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
-    const { user } = useAuth();
-    const { userData, updateUserField } = useData();
-    const [form, setForm] = useState({
-        nickname: '', name: '', studentId: '', major: '', grade: '', interests: [] as string[], enrollmentYear: '', graduationYear: '', phone: ''
-    });
-    const [loading, setLoading] = useState(false);
-    const [success, setSuccess] = useState('');
-    const [error, setError] = useState('');
-    const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
-    const [editMode, setEditMode] = useState(false);
-    const [newPassword, setNewPassword] = useState('');
+  const { user } = useAuth();
+  const { userData, updateUserField } = useData();
+  const [form, setForm] = useState<ProfileForm>({
+    name: '',
+    studentId: '',
+    major: '',
+    grade: 1,
+    semester: 1,
+    phone: '',
+    completedCredits: 0,
+    career: '',
+    industry: '',
+    remainingSemesters: 0,
+    maxCreditsPerTerm: 18,
+    enrollmentYear: null,
+    graduationYear: null
+  });
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [selectedProfessors, setSelectedProfessors] = useState<number[]>([]);
 
-    useEffect(() => {
-        if (userData?.profile) {
-            console.log('[AccountSettings] Loading profile data:', userData.profile);
-            setForm({
-                nickname: userData.profile.nickname || '',
-                name: userData.profile.name || '',
-                studentId: userData.profile.studentId || '',
-                major: userData.profile.major || '',
-                grade: userData.profile.grade ? String(userData.profile.grade) : '',
-                interests: userData.profile.interests || [],
-                enrollmentYear: userData.profile.enrollmentYear || '',
-                graduationYear: userData.profile.graduationYear || '',
-                phone: userData.profile.phone || ''
-            });
-        } else {
-            console.log('[AccountSettings] No profile data available');
-        }
-        setNewPassword('');
-        setEditMode(false);
-    }, [userData, open]);
+  // 백엔드에서 프로필 데이터 로드
+  const loadProfileFromBackend = async () => {
+    try {
+      setInitialLoading(true);
+      const profile = await apiService.getProfile();
+      
+      if (profile) {
+        setForm({
+          name: profile.name || '',
+          studentId: profile.studentId || '',
+          major: profile.major || '',
+          grade: profile.grade || 1,
+          semester: profile.semester || 1,
+          phone: profile.phone || '',
+          completedCredits: profile.completedCredits || 0,
+          career: profile.career || '',
+          industry: profile.industry || '',
+          remainingSemesters: profile.remainingSemesters || 0,
+          maxCreditsPerTerm: profile.maxCreditsPerTerm || 18,
+          enrollmentYear: profile.enrollmentYear || null,
+          graduationYear: profile.graduationYear || null
+        });
+      }
+    } catch (err: any) {
+      console.error('프로필 로드 실패:', err);
+      setError('프로필 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setInitialLoading(false);
+    }
+  };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
-    };
+  useEffect(() => {
+    if (open) {
+      loadProfileFromBackend();
+      setEditMode(false);
+      setError('');
+      setSuccess('');
+    }
+  }, [open]);
 
-    const handleDateChange = (name: 'enrollmentDate' | 'graduationDate', value: Date | null) => {
-        setForm(prev => ({ ...prev, [name]: value }));
-    };
+  const handleChange = (field: keyof ProfileForm, value: any) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
 
-    const handleInterestToggle = (interest: string) => {
-        setForm(prev => ({
-            ...prev,
-            interests: prev.interests.includes(interest)
-                ? prev.interests.filter(i => i !== interest)
-                : [...prev.interests, interest]
-        }));
-    };
-
-    const handleSave = async () => {
-        if (!user?.email || !userData) return;
-        setLoading(true);
-        setError('');
-        setSuccess('');
-
-        try {
-            // 백엔드에 프로필 업데이트
-            const { apiService } = await import('../services/ApiService');
-            const backendUpdates: any = {};
-
-            if (form.name !== userData.profile.name) backendUpdates.username = form.name;
-            if (form.phone !== userData.profile.phone) backendUpdates.phone = form.phone;
-            if (form.major !== userData.profile.major) backendUpdates.major = form.major;
-
-            if (Object.keys(backendUpdates).length > 0) {
-                console.log('[AccountSettings] Updating backend profile:', backendUpdates);
-                await apiService.updateProfile(backendUpdates);
-            }
-
-            // 로컬 스토리지 프로필 업데이트
-            const updatedProfile = {
-                ...userData.profile,
-                ...form,
-                enrollmentYear: form.enrollmentYear,
-                graduationYear: form.graduationYear,
-                interests: form.interests,
-                name: form.name,
-                phone: form.phone,
-            };
-            updateUserField('profile', updatedProfile);
-
-            // 비밀번호 변경 처리
-            if (newPassword.trim()) {
-                const updatedSettings = {
-                    ...userData.settings,
-                    password: newPassword
-                };
-                updateUserField('settings', updatedSettings);
-            }
-
-            setSuccess('계정 정보가 저장되었습니다!');
-            setEditMode(false);
-        } catch (error) {
-            setError('저장에 실패했습니다.');
-            console.error('계정 정보 저장 실패:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCancel = () => {
-        if (userData?.profile) {
-            setForm({
-                nickname: userData.profile.nickname || '',
-                name: userData.profile.name || '',
-                studentId: userData.profile.studentId || '',
-                major: userData.profile.major || '',
-                grade: userData.profile.grade || '',
-                interests: userData.profile.interests || [],
-                enrollmentYear: userData.profile.enrollmentYear || '',
-                graduationYear: userData.profile.graduationYear || '',
-                phone: userData.profile.phone || ''
-            });
-        }
-        setEditMode(false);
-    };
-
-    return (
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontWeight: 800, fontSize: 22, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    계정 설정
-                    {!editMode && (
-                        <IconButton size="small" onClick={() => setEditMode(true)} sx={{ ml: 1 }}>
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                    )}
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mb: 2 }}>
-                        <Typography color="text.secondary" fontWeight={700}>아이디(이메일)</Typography>
-                        <Typography>{user?.email || '-'}</Typography>
-                    </Box>
-                    {!editMode ? (
-                        <Box sx={{ p: 1 }}>
-                            <Grid container spacing={2}>
-                                <Grid item xs={6}><Typography color="text.secondary">닉네임</Typography><Typography>{form.nickname || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">이름</Typography><Typography>{form.name || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">학번</Typography><Typography>{form.studentId || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">전공</Typography><Typography>{form.major || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">학년</Typography><Typography>{form.grade || '-'}</Typography></Grid>
-                                <Grid item xs={12}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <Typography color="text.secondary">관심 분야</Typography>
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => setIsOnboardingModalOpen(true)}
-                                            sx={{
-                                                color: 'primary.main',
-                                                '&:hover': {
-                                                    backgroundColor: 'primary.main',
-                                                    color: 'white'
-                                                }
-                                            }}
-                                        >
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                        {form.interests.length === 0 ?
-                                            <Typography color="text.disabled">-</Typography> :
-                                            form.interests.map(i => <Chip key={i} label={i} size="small" />)
-                                        }
-                                    </Box>
-                                </Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">입학년도</Typography><Typography>{form.enrollmentYear || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">졸업예정년도</Typography><Typography>{form.graduationYear || '-'}</Typography></Grid>
-                                <Grid item xs={6}><Typography color="text.secondary">전화번호</Typography><Typography>{form.phone || '-'}</Typography></Grid>
-                            </Grid>
-                        </Box>
-                    ) : (
-                        <Box sx={{ p: 1 }}>
-                            <TextField label="닉네임" name="nickname" value={form.nickname} onChange={handleChange} fullWidth sx={{ mb: 2 }} />
-                            <TextField
-                                label="이름"
-                                name="name"
-                                value={form.name}
-                                onChange={handleChange}
-                                fullWidth
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input.Mui-disabled': {
-                                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                                    }
-                                }}
-                                disabled={true}
-                                helperText="회원가입 시 입력한 정보입니다"
-                            />
-                            <TextField
-                                label="학번"
-                                name="studentId"
-                                value={form.studentId}
-                                onChange={handleChange}
-                                fullWidth
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input.Mui-disabled': {
-                                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                                    }
-                                }}
-                                disabled={true}
-                                helperText="회원가입 시 입력한 정보입니다"
-                            />
-                            <TextField
-                                label="전공"
-                                name="major"
-                                value={form.major}
-                                onChange={handleChange}
-                                fullWidth
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input.Mui-disabled': {
-                                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                                    }
-                                }}
-                                disabled={true}
-                                helperText="회원가입 시 입력한 정보입니다"
-                            />
-                            <TextField
-                                select
-                                label="학년"
-                                name="grade"
-                                value={form.grade}
-                                onChange={handleChange}
-                                fullWidth
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputBase-input.Mui-disabled': {
-                                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
-                                    }
-                                }}
-                                disabled={true}
-                                helperText="회원가입 시 입력한 정보입니다"
-                            >
-                                {grades.map(g => <MenuItem key={g} value={g}>{g}</MenuItem>)}
-                            </TextField>
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant="subtitle2" mb={1}>관심 분야</Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {interestsList.map(interest => (
-                                        <Chip
-                                            key={interest}
-                                            label={interest}
-                                            color={form.interests.includes(interest) ? 'primary' : 'default'}
-                                            onClick={() => handleInterestToggle(interest)}
-                                            variant={form.interests.includes(interest) ? 'filled' : 'outlined'}
-                                            sx={{ cursor: 'pointer' }}
-                                        />
-                                    ))}
-                                </Box>
-                            </Box>
-                            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                                <TextField label="입학년도" name="enrollmentYear" type="number" value={form.enrollmentYear} onChange={handleChange} fullWidth sx={{ mb: 2 }} />
-                                <TextField label="졸업예정년도" name="graduationYear" type="number" value={form.graduationYear} onChange={handleChange} fullWidth sx={{ mb: 2 }} />
-                            </Box>
-                            <TextField label="전화번호" name="phone" value={form.phone} onChange={handleChange} fullWidth sx={{ mb: 2 }} />
-                            <TextField label="새 비밀번호 (변경 시 입력)" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} fullWidth sx={{ mb: 2 }} />
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    {!editMode ? (
-                        <Button onClick={onClose} color="primary" variant="outlined">닫기</Button>
-                    ) : (
-                        <>
-                            <Button onClick={handleCancel} color="inherit">취소</Button>
-                            <Button onClick={handleSave} color="primary" variant="contained" disabled={loading}>{loading ? '저장 중...' : '저장하기'}</Button>
-                        </>
-                    )}
-                </DialogActions>
-                <Snackbar open={!!success} autoHideDuration={3000} onClose={() => setSuccess('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-                    <Alert severity="success" sx={{ width: '100%' }}>{success}</Alert>
-                </Snackbar>
-                <Snackbar open={!!error} autoHideDuration={3000} onClose={() => setError('')} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-                    <Alert severity="error" sx={{ width: '100%' }}>{error}</Alert>
-                </Snackbar>
-            </Dialog>
-
-            {/* 온보딩 편집 모달 */}
-            {isOnboardingModalOpen && (
-                <InterestSelection onClose={() => setIsOnboardingModalOpen(false)} />
-            )}
-        </LocalizationProvider>
+  const handleProfessorToggle = (professorId: number) => {
+    setSelectedProfessors(prev => 
+      prev.includes(professorId)
+        ? prev.filter(id => id !== professorId)
+        : [...prev, professorId]
     );
+  };
+
+  const handleSave = async () => {
+    if (!user?.email) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const updateData = {
+        name: form.name,
+        studentId: form.studentId,
+        major: form.major,
+        grade: form.grade,
+        semester: form.semester,
+        phone: form.phone,
+        completedCredits: form.completedCredits,
+        career: form.career,
+        industry: form.industry,
+        remainingSemesters: form.remainingSemesters,
+        maxCreditsPerTerm: form.maxCreditsPerTerm,
+        enrollmentYear: form.enrollmentYear || undefined,
+        graduationYear: form.graduationYear || undefined
+      };
+
+      const result = await apiService.updateProfile(updateData);
+      console.log('프로필 업데이트 성공:', result);
+
+      if (userData) {
+        const updatedProfile = {
+          ...userData.profile,
+          name: form.name,
+          studentId: form.studentId,
+          major: form.major,
+          grade: form.grade,
+          semester: form.semester,
+          phone: form.phone
+        };
+        updateUserField('profile', updatedProfile);
+      }
+
+      setSuccess('프로필이 성공적으로 저장되었습니다!');
+      setEditMode(false);
+      apiService.clearProfileCache();
+      
+    } catch (error: any) {
+      console.error('프로필 저장 실패:', error);
+      setError(error.message || '저장에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    loadProfileFromBackend();
+    setEditMode(false);
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, fontSize: 22, display: 'flex', alignItems: 'center', gap: 1 }}>
+          계정 설정
+          {!editMode && !initialLoading && (
+            <IconButton size="small" onClick={() => setEditMode(true)} sx={{ ml: 1 }}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          )}
+        </DialogTitle>
+        
+        <DialogContent>
+          {initialLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                  {error}
+                </Alert>
+              )}
+
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+                  {success}
+                </Alert>
+              )}
+
+              {/* 기본 정보 */}
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                기본 정보
+              </Typography>
+              
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6}>
+                  <Typography color="text.secondary" fontWeight={700} sx={{ mb: 1 }}>
+                    이메일
+                  </Typography>
+                  <Typography>{user?.email || '-'}</Typography>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="이름"
+                    value={form.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    disabled={!editMode || loading}
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="학번"
+                    value={form.studentId}
+                    disabled
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="전공"
+                    value={form.major}
+                    disabled
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>학년</InputLabel>
+                    <Select
+                      value={form.grade}
+                      label="학년"
+                      onChange={(e) => handleChange('grade', e.target.value)}
+                      disabled={!editMode || loading}
+                    >
+                      {grades.map(grade => (
+                        <MenuItem key={grade} value={grade}>{grade}학년</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>학기</InputLabel>
+                    <Select
+                      value={form.semester}
+                      label="학기"
+                      onChange={(e) => handleChange('semester', e.target.value)}
+                      disabled={!editMode || loading}
+                    >
+                      {semesters.map(semester => (
+                        <MenuItem key={semester} value={semester}>{semester}학기</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    label="연락처"
+                    value={form.phone}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                    disabled={!editMode || loading}
+                    fullWidth
+                    size="small"
+                  />
+                </Grid>
+              </Grid>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* 선호교수 설정 */}
+                <Typography variant="h6" gutterBottom>
+                    선호 교수
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    시간표 생성 시 선택된 교수님의 강의가 우선적으로 배정됩니다.
+                </Typography>
+
+                {editMode ? (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2 }}>
+                    {availableProfessors.map(professor => (
+                    <Chip
+                        key={professor.id}
+                        label={professor.name}
+                        color={selectedProfessors.includes(professor.id) ? 'primary' : 'default'}
+                        variant={selectedProfessors.includes(professor.id) ? 'filled' : 'outlined'}
+                        onClick={() => handleProfessorToggle(professor.id)}
+                        sx={{ cursor: 'pointer', fontWeight: 600 }}
+                    />
+                    ))}
+                </Box>
+                ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2 }}>
+                    {selectedProfessors.length > 0 ? (
+                    selectedProfessors.map(professorId => {
+                        const professor = availableProfessors.find(p => p.id === professorId);
+                        return professor ? (
+                        <Chip
+                            key={professor.id}
+                            label={professor.name}
+                            color="primary"
+                            variant="filled"
+                        />
+                        ) : null;
+                    })
+                    ) : (
+                    <Typography variant="body2" color="text.secondary">
+                        설정된 교수가 없습니다.
+                    </Typography>
+                    )}
+                </Box>
+                )}
+            </>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          {editMode ? (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                onClick={handleCancel}
+                disabled={loading}
+                startIcon={<CancelIcon />}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleSave}
+                variant="contained"
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
+              >
+                {loading ? '저장 중...' : '저장'}
+              </Button>
+            </Box>
+          ) : (
+            <Button onClick={onClose}>
+              닫기
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+    </LocalizationProvider>
+  );
 };
 
-export default AccountSettings; 
+export default AccountSettings;
