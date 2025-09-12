@@ -114,7 +114,31 @@ const LectureStatusModal: React.FC<LectureStatusModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await submitStatusUpdate(false, false);
+        if (!lecture) return;
+
+        try {
+            setLoading(true);
+            setError(null);
+
+            const updateData = {
+                status,
+                recordGrade,
+            };
+
+            const updatedLecture = await curriculumService.updateLecture(
+                curriculumId,
+                lecture.id,
+                updateData
+            );
+
+            onSuccess(updatedLecture);
+            handleClose();
+        } catch (error: any) {
+            console.error('Failed to update lecture status:', error);
+            setError(error instanceof Error ? error.message : '상태 업데이트에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const submitStatusUpdate = async (forceRetaken: boolean = false, confirmDuplicate: boolean = false) => {
