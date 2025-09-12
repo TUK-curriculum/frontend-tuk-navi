@@ -21,7 +21,7 @@ interface CourseEditModalProps {
     onClose: () => void;
     onSave: (courseData: Partial<Course>) => void;
     course?: Course | null;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: number) => void;
 }
 
 const CourseEditModal: React.FC<CourseEditModalProps> = ({

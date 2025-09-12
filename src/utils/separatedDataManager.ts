@@ -37,7 +37,7 @@ export const getCurrentUserId = (): string | null => {
     return localStorage.getItem(StorageKeys.currentUser());
 };
 
-export const setCurrentUserId = (userId: string): void => {
+export const setCurrentUserId = (userId: number): void => {
     localStorage.setItem(StorageKeys.currentUser(), userId);
 };
 
@@ -74,7 +74,7 @@ const removeEntity = (key: string): void => {
 };
 
 // UserProfile 관리
-export const getUserProfile = (userId: string): UserProfile => {
+export const getUserProfile = (userId: number): UserProfile => {
     const key = StorageKeys.userProfile(userId);
     return loadEntity(key, createDefaultUserProfile(userId));
 };
@@ -85,7 +85,7 @@ export const saveUserProfile = (profile: UserProfile): void => {
     saveEntity(key, updatedProfile);
 };
 
-export const updateUserProfile = (userId: string, updates: Partial<Omit<UserProfile, 'userId'>>): UserProfile => {
+export const updateUserProfile = (userId: number, updates: Partial<Omit<UserProfile, 'userId'>>): UserProfile => {
     const current = getUserProfile(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveUserProfile(updated);
@@ -93,7 +93,7 @@ export const updateUserProfile = (userId: string, updates: Partial<Omit<UserProf
 };
 
 // GraduationInfo 관리
-export const getGraduationInfo = (userId: string): GraduationInfo => {
+export const getGraduationInfo = (userId: number): GraduationInfo => {
     const key = StorageKeys.graduationInfo(userId);
     return loadEntity(key, createDefaultGraduationInfo(userId));
 };
@@ -104,7 +104,7 @@ export const saveGraduationInfo = (info: GraduationInfo): void => {
     saveEntity(key, updatedInfo);
 };
 
-export const updateGraduationInfo = (userId: string, updates: Partial<Omit<GraduationInfo, 'userId'>>): GraduationInfo => {
+export const updateGraduationInfo = (userId: number, updates: Partial<Omit<GraduationInfo, 'userId'>>): GraduationInfo => {
     const current = getGraduationInfo(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveGraduationInfo(updated);
@@ -112,7 +112,7 @@ export const updateGraduationInfo = (userId: string, updates: Partial<Omit<Gradu
 };
 
 // Curriculum 관리
-export const getCurriculum = (userId: string): Curriculum => {
+export const getCurriculum = (userId: number): Curriculum => {
     const key = StorageKeys.curriculum(userId);
     return loadEntity(key, createDefaultCurriculum(userId));
 };
@@ -123,7 +123,7 @@ export const saveCurriculum = (curriculum: Curriculum): void => {
     saveEntity(key, updatedCurriculum);
 };
 
-export const updateCurriculum = (userId: string, updates: Partial<Omit<Curriculum, 'userId'>>): Curriculum => {
+export const updateCurriculum = (userId: number, updates: Partial<Omit<Curriculum, 'userId'>>): Curriculum => {
     const current = getCurriculum(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveCurriculum(updated);
@@ -131,7 +131,7 @@ export const updateCurriculum = (userId: string, updates: Partial<Omit<Curriculu
 };
 
 // Schedule 관리
-export const getSchedule = (userId: string): Schedule => {
+export const getSchedule = (userId: number): Schedule => {
     const key = StorageKeys.schedule(userId);
     return loadEntity(key, createDefaultSchedule(userId));
 };
@@ -142,7 +142,7 @@ export const saveSchedule = (schedule: Schedule): void => {
     saveEntity(key, updatedSchedule);
 };
 
-export const updateSchedule = (userId: string, updates: Partial<Omit<Schedule, 'userId'>>): Schedule => {
+export const updateSchedule = (userId: number, updates: Partial<Omit<Schedule, 'userId'>>): Schedule => {
     const current = getSchedule(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveSchedule(updated);
@@ -150,7 +150,7 @@ export const updateSchedule = (userId: string, updates: Partial<Omit<Schedule, '
 };
 
 // Onboarding 관리
-export const getOnboarding = (userId: string): Onboarding => {
+export const getOnboarding = (userId: number): Onboarding => {
     const key = StorageKeys.onboarding(userId);
     return loadEntity(key, createDefaultOnboarding(userId));
 };
@@ -161,7 +161,7 @@ export const saveOnboarding = (onboarding: Onboarding): void => {
     saveEntity(key, updatedOnboarding);
 };
 
-export const updateOnboarding = (userId: string, updates: Partial<Omit<Onboarding, 'userId'>>): Onboarding => {
+export const updateOnboarding = (userId: number, updates: Partial<Omit<Onboarding, 'userId'>>): Onboarding => {
     const current = getOnboarding(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveOnboarding(updated);
@@ -169,7 +169,7 @@ export const updateOnboarding = (userId: string, updates: Partial<Omit<Onboardin
 };
 
 // UserSettings 관리
-export const getUserSettings = (userId: string): UserSettings => {
+export const getUserSettings = (userId: number): UserSettings => {
     const key = StorageKeys.settings(userId);
     return loadEntity(key, createDefaultSettings(userId));
 };
@@ -180,7 +180,7 @@ export const saveUserSettings = (settings: UserSettings): void => {
     saveEntity(key, updatedSettings);
 };
 
-export const updateUserSettings = (userId: string, updates: Partial<Omit<UserSettings, 'userId'>>): UserSettings => {
+export const updateUserSettings = (userId: number, updates: Partial<Omit<UserSettings, 'userId'>>): UserSettings => {
     const current = getUserSettings(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveUserSettings(updated);
@@ -188,7 +188,7 @@ export const updateUserSettings = (userId: string, updates: Partial<Omit<UserSet
 };
 
 // UserStatistics 관리
-export const getUserStatistics = (userId: string): UserStatistics => {
+export const getUserStatistics = (userId: number): UserStatistics => {
     const key = StorageKeys.statistics(userId);
     return loadEntity(key, createDefaultStatistics(userId));
 };
@@ -199,7 +199,7 @@ export const saveUserStatistics = (statistics: UserStatistics): void => {
     saveEntity(key, updatedStatistics);
 };
 
-export const updateUserStatistics = (userId: string, updates: Partial<Omit<UserStatistics, 'userId'>>): UserStatistics => {
+export const updateUserStatistics = (userId: number, updates: Partial<Omit<UserStatistics, 'userId'>>): UserStatistics => {
     const current = getUserStatistics(userId);
     const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
     saveUserStatistics(updated);
@@ -207,17 +207,17 @@ export const updateUserStatistics = (userId: string, updates: Partial<Omit<UserS
 };
 
 // Notes 관리 (1:N)
-export const getNotes = (userId: string): Note[] => {
+export const getNotes = (userId: number): Note[] => {
     const key = StorageKeys.notes(userId);
     return loadEntity(key, []);
 };
 
-export const saveNotes = (userId: string, notes: Note[]): void => {
+export const saveNotes = (userId: number, notes: Note[]): void => {
     const key = StorageKeys.notes(userId);
     saveEntity(key, notes);
 };
 
-export const addNote = (userId: string, note: Omit<Note, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Note => {
+export const addNote = (userId: number, note: Omit<Note, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Note => {
     const notes = getNotes(userId);
     const newNote: Note = {
         ...note,
@@ -235,7 +235,7 @@ export const addNote = (userId: string, note: Omit<Note, 'id' | 'userId' | 'crea
     return newNote;
 };
 
-export const updateNote = (userId: string, noteId: string, updates: Partial<Omit<Note, 'id' | 'userId'>>): Note | null => {
+export const updateNote = (userId: number, noteId: string, updates: Partial<Omit<Note, 'id' | 'userId'>>): Note | null => {
     const notes = getNotes(userId);
     const noteIndex = notes.findIndex(n => n.id === noteId);
     if (noteIndex === -1) return null;
@@ -248,7 +248,7 @@ export const updateNote = (userId: string, noteId: string, updates: Partial<Omit
     return updatedNote;
 };
 
-export const deleteNote = (userId: string, noteId: string): boolean => {
+export const deleteNote = (userId: number, noteId: string): boolean => {
     const notes = getNotes(userId);
     const filteredNotes = notes.filter(n => n.id !== noteId);
     if (filteredNotes.length === notes.length) return false;
@@ -262,17 +262,17 @@ export const deleteNote = (userId: string, noteId: string): boolean => {
 };
 
 // Messages 관리 (1:N)
-export const getMessages = (userId: string): ChatMessage[] => {
+export const getMessages = (userId: number): ChatMessage[] => {
     const key = StorageKeys.messages(userId);
     return loadEntity(key, []);
 };
 
-export const saveMessages = (userId: string, messages: ChatMessage[]): void => {
+export const saveMessages = (userId: number, messages: ChatMessage[]): void => {
     const key = StorageKeys.messages(userId);
     saveEntity(key, messages);
 };
 
-export const addMessage = (userId: string, message: Omit<ChatMessage, 'id' | 'userId' | 'timestamp'>): ChatMessage => {
+export const addMessage = (userId: number, message: Omit<ChatMessage, 'id' | 'userId' | 'timestamp'>): ChatMessage => {
     const messages = getMessages(userId);
     const newMessage: ChatMessage = {
         ...message,
@@ -289,23 +289,23 @@ export const addMessage = (userId: string, message: Omit<ChatMessage, 'id' | 'us
     return newMessage;
 };
 
-export const clearMessages = (userId: string): void => {
+export const clearMessages = (userId: number): void => {
     saveMessages(userId, []);
     updateUserStatistics(userId, { messagesCount: 0 });
 };
 
 // Notifications 관리 (1:N)
-export const getNotifications = (userId: string): NotificationItem[] => {
+export const getNotifications = (userId: number): NotificationItem[] => {
     const key = StorageKeys.notifications(userId);
     return loadEntity(key, []);
 };
 
-export const saveNotifications = (userId: string, notifications: NotificationItem[]): void => {
+export const saveNotifications = (userId: number, notifications: NotificationItem[]): void => {
     const key = StorageKeys.notifications(userId);
     saveEntity(key, notifications);
 };
 
-export const addNotification = (userId: string, notification: Omit<NotificationItem, 'id' | 'userId' | 'timestamp'>): NotificationItem => {
+export const addNotification = (userId: number, notification: Omit<NotificationItem, 'id' | 'userId' | 'timestamp'>): NotificationItem => {
     const notifications = getNotifications(userId);
     const newNotification: NotificationItem = {
         ...notification,
@@ -320,7 +320,7 @@ export const addNotification = (userId: string, notification: Omit<NotificationI
     return newNotification;
 };
 
-export const markNotificationAsRead = (userId: string, notificationId: string): boolean => {
+export const markNotificationAsRead = (userId: number, notificationId: string): boolean => {
     const notifications = getNotifications(userId);
     const notificationIndex = notifications.findIndex(n => n.id === notificationId);
     if (notificationIndex === -1) return false;
@@ -332,27 +332,27 @@ export const markNotificationAsRead = (userId: string, notificationId: string): 
     return true;
 };
 
-export const clearNotifications = (userId: string): void => {
+export const clearNotifications = (userId: number): void => {
     saveNotifications(userId, []);
 };
 
 // 기존 호환성을 위한 배열 데이터 관리
-export const getCourses = (userId: string): Subject[] => {
+export const getCourses = (userId: number): Subject[] => {
     const key = StorageKeys.courses(userId);
     return loadEntity(key, []);
 };
 
-export const saveCourses = (userId: string, courses: Subject[]): void => {
+export const saveCourses = (userId: number, courses: Subject[]): void => {
     const key = StorageKeys.courses(userId);
     saveEntity(key, courses);
 };
 
-export const getCompletedCourses = (userId: string): Subject[] => {
+export const getCompletedCourses = (userId: number): Subject[] => {
     const key = StorageKeys.completedCourses(userId);
     return loadEntity(key, []);
 };
 
-export const saveCompletedCourses = (userId: string, courses: Subject[]): void => {
+export const saveCompletedCourses = (userId: number, courses: Subject[]): void => {
     const key = StorageKeys.completedCourses(userId);
     saveEntity(key, courses);
 
@@ -360,32 +360,32 @@ export const saveCompletedCourses = (userId: string, courses: Subject[]): void =
     updateUserStatistics(userId, { completedCoursesCount: courses.length });
 };
 
-export const getTimetableCourses = (userId: string): Subject[] => {
+export const getTimetableCourses = (userId: number): Subject[] => {
     const key = StorageKeys.timetableCourses(userId);
     return loadEntity(key, []);
 };
 
-export const saveTimetableCourses = (userId: string, courses: Subject[]): void => {
+export const saveTimetableCourses = (userId: number, courses: Subject[]): void => {
     const key = StorageKeys.timetableCourses(userId);
     saveEntity(key, courses);
 };
 
-export const getGraduationRequirements = (userId: string): Subject[] => {
+export const getGraduationRequirements = (userId: number): Subject[] => {
     const key = StorageKeys.graduationRequirements(userId);
     return loadEntity(key, []);
 };
 
-export const saveGraduationRequirements = (userId: string, courses: Subject[]): void => {
+export const saveGraduationRequirements = (userId: number, courses: Subject[]): void => {
     const key = StorageKeys.graduationRequirements(userId);
     saveEntity(key, courses);
 };
 
-export const getFavorites = (userId: string): string[] => {
+export const getFavorites = (userId: number): string[] => {
     const key = StorageKeys.favorites(userId);
     return loadEntity(key, []);
 };
 
-export const saveFavorites = (userId: string, favorites: string[]): void => {
+export const saveFavorites = (userId: number, favorites: string[]): void => {
     const key = StorageKeys.favorites(userId);
     saveEntity(key, favorites);
 
@@ -393,7 +393,7 @@ export const saveFavorites = (userId: string, favorites: string[]): void => {
     updateUserStatistics(userId, { favoriteCoursesCount: favorites.length });
 };
 
-export const addToFavorites = (userId: string, courseId: string): void => {
+export const addToFavorites = (userId: number, courseId: string): void => {
     const favorites = getFavorites(userId);
     if (!favorites.includes(courseId)) {
         const updatedFavorites = [...favorites, courseId];
@@ -401,23 +401,23 @@ export const addToFavorites = (userId: string, courseId: string): void => {
     }
 };
 
-export const removeFromFavorites = (userId: string, courseId: string): void => {
+export const removeFromFavorites = (userId: number, courseId: string): void => {
     const favorites = getFavorites(userId);
     const updatedFavorites = favorites.filter(id => id !== courseId);
     saveFavorites(userId, updatedFavorites);
 };
 
-export const getRecentSearches = (userId: string): string[] => {
+export const getRecentSearches = (userId: number): string[] => {
     const key = StorageKeys.recentSearches(userId);
     return loadEntity(key, []);
 };
 
-export const saveRecentSearches = (userId: string, searches: string[]): void => {
+export const saveRecentSearches = (userId: number, searches: string[]): void => {
     const key = StorageKeys.recentSearches(userId);
     saveEntity(key, searches);
 };
 
-export const addRecentSearch = (userId: string, searchTerm: string): void => {
+export const addRecentSearch = (userId: number, searchTerm: string): void => {
     const searches = getRecentSearches(userId);
     const filtered = searches.filter(term => term !== searchTerm);
     const updated = [searchTerm, ...filtered].slice(0, 10); // 최대 10개 유지
@@ -425,7 +425,7 @@ export const addRecentSearch = (userId: string, searchTerm: string): void => {
 };
 
 // 로그인 통계 업데이트
-export const updateLoginStatistics = (userId: string): void => {
+export const updateLoginStatistics = (userId: number): void => {
     const stats = getUserStatistics(userId);
     const updatedStats = {
         ...stats,
@@ -436,7 +436,7 @@ export const updateLoginStatistics = (userId: string): void => {
 };
 
 // 사용자 데이터 초기화 (새 사용자용)
-export const initializeUserData = (userId: string): void => {
+export const initializeUserData = (userId: number): void => {
     // 기본값들을 모두 생성하여 저장
     saveUserProfile(createDefaultUserProfile(userId));
     saveGraduationInfo(createDefaultGraduationInfo(userId));
@@ -461,7 +461,7 @@ export const initializeUserData = (userId: string): void => {
 };
 
 // 사용자 데이터 완전 삭제
-export const deleteUserData = (userId: string): void => {
+export const deleteUserData = (userId: number): void => {
     // 모든 키 삭제
     Object.values(StorageKeys).forEach(keyFn => {
         if (typeof keyFn === 'function') {
@@ -474,7 +474,7 @@ export const deleteUserData = (userId: string): void => {
 };
 
 // 데이터 내보내기 (백업용)
-export const exportUserData = (userId: string): string => {
+export const exportUserData = (userId: number): string => {
     const userData = {
         profile: getUserProfile(userId),
         graduationInfo: getGraduationInfo(userId),
@@ -498,7 +498,7 @@ export const exportUserData = (userId: string): string => {
 };
 
 // 데이터 가져오기 (복원용)
-export const importUserData = (userId: string, jsonData: string): boolean => {
+export const importUserData = (userId: number, jsonData: string): boolean => {
     try {
         const userData = JSON.parse(jsonData);
 

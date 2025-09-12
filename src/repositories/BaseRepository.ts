@@ -1,9 +1,9 @@
 export interface IRepository<T> {
     findAll(): Promise<T[]>;
-    findById(id: string): Promise<T | null>;
+    findById(id: number): Promise<T | null>;
     create(data: Partial<T>): Promise<T>;
-    update(id: string, data: Partial<T>): Promise<T>;
-    delete(id: string): Promise<boolean>;
+    update(id: number, data: Partial<T>): Promise<T>;
+    delete(id: number): Promise<boolean>;
 }
 
 export interface PaginationParams {
@@ -29,10 +29,10 @@ export abstract class BaseRepository<T> implements IRepository<T> {
     protected abstract endpoint: string;
 
     abstract findAll(options?: QueryOptions): Promise<T[]>;
-    abstract findById(id: string): Promise<T | null>;
+    abstract findById(id: number): Promise<T | null>;
     abstract create(data: Partial<T>): Promise<T>;
-    abstract update(id: string, data: Partial<T>): Promise<T>;
-    abstract delete(id: string): Promise<boolean>;
+    abstract update(id: number, data: Partial<T>): Promise<T>;
+    abstract delete(id: number): Promise<boolean>;
 
     protected buildQueryString(params: QueryOptions = {}): string {
         const queryParams = new URLSearchParams();

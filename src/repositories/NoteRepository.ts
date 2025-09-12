@@ -18,7 +18,7 @@ export class NoteRepository extends BaseRepository<Note> {
         return apiClient.get<Note[]>(`${this.endpoint}${query}`);
     }
 
-    async findById(id: string): Promise<Note | null> {
+    async findById(id: number): Promise<Note | null> {
         if (environment.mockMode) {
             const { getMockNoteById } = await import('../mocks/users.mock');
             return getMockNoteById(id);
@@ -38,7 +38,7 @@ export class NoteRepository extends BaseRepository<Note> {
         return apiClient.post<Note>(this.endpoint, data);
     }
 
-    async update(id: string, data: NoteUpdateDTO): Promise<Note> {
+    async update(id: number, data: NoteUpdateDTO): Promise<Note> {
         if (environment.mockMode) {
             const { updateMockNote } = await import('../mocks/users.mock');
             return updateMockNote(id, data);
@@ -46,7 +46,7 @@ export class NoteRepository extends BaseRepository<Note> {
         return apiClient.patch<Note>(apiEndpoints.notes.detail(id), data);
     }
 
-    async delete(id: string): Promise<boolean> {
+    async delete(id: number): Promise<boolean> {
         if (environment.mockMode) {
             const { deleteMockNote } = await import('../mocks/users.mock');
             return deleteMockNote(id);

@@ -2,7 +2,7 @@
 // 사용자별 데이터 관리를 위한 통합 타입 시스템
 
 export interface UserProfile {
-    name: string;
+    name: number;
     email: string;
     studentId: string;
     major: string;
@@ -38,7 +38,7 @@ export interface Curriculum {
 }
 
 export interface Subject {
-    id: string;
+    id: number
     name: string;
     code: string;
     credits: number;
@@ -50,7 +50,7 @@ export interface Subject {
 }
 
 export interface TimetableSlot {
-    id: string;
+    id: number;
     subjectId: string;
     subjectName: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
@@ -64,7 +64,7 @@ export interface TimetableSlot {
 }
 
 export interface CustomEvent {
-    id: string;
+    id: number;
     title: string;
     description?: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
@@ -81,7 +81,7 @@ export interface Schedule {
 }
 
 export interface Note {
-    id: string;
+    id: number;
     title: string;
     content: string;
     category: string | undefined;
@@ -94,7 +94,7 @@ export interface Note {
 }
 
 export interface ChatMessage {
-    id: string;
+    id: number;
     content: string;
     sender: 'user' | 'assistant';
     timestamp: string;
@@ -170,7 +170,7 @@ export interface UserData {
 
 // 알림 아이템 타입
 export interface NotificationItem {
-    id: string;
+    id: number
     title: string;
     message: string;
     type: 'info' | 'warning' | 'success' | 'error';
@@ -243,7 +243,7 @@ export type DataAction =
     | { type: 'UPDATE_CURRICULUM'; payload: Partial<Curriculum> }
     | { type: 'UPDATE_SCHEDULE'; payload: Partial<Schedule> }
     | { type: 'ADD_NOTE'; payload: Note }
-    | { type: 'UPDATE_NOTE'; payload: { id: string; note: Partial<Note> } }
+    | { type: 'UPDATE_NOTE'; payload: { id: number; note: Partial<Note> } }
     | { type: 'DELETE_NOTE'; payload: string }
     | { type: 'ADD_MESSAGE'; payload: ChatMessage }
     | { type: 'CLEAR_MESSAGES' }

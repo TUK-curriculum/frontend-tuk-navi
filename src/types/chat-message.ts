@@ -1,6 +1,6 @@
 export interface ChatMessage {
-    id: string;
-    userId: string;
+    id: number
+    userId: number;
     sender: 'user' | 'assistant';
     content: string;
     msgType?: string;

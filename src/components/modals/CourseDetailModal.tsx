@@ -6,7 +6,7 @@ export type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' 
 export type CourseType = 'GR' | 'GE' | 'MR' | 'ME' | 'RE' | 'FE';
 
 export interface Course {
-    id: string;
+    id: number;
     name: string; 
     code: string; 
     day: DayKey; 
@@ -32,7 +32,7 @@ interface CourseDetailModalProps {
     open: boolean;
     course: Course | null;
     onClose: () => void;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: number) => void;
 }
 
 const typeColor = (type: CourseType): "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning" => {

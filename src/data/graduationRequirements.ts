@@ -1,7 +1,7 @@
 // 한국공학대학교 컴퓨터공학부 졸업요건 데이터 (2021·2022학번 기준)
 
 export interface Course {
-    id: string;
+    id: number;
     name: string;
     credits: number;
     category: string;

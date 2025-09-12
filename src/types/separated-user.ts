@@ -3,7 +3,7 @@
 
 // 기본 사용자 엔티티 (인증 정보만 포함)
 export interface User {
-    id: string; // 사용자 고유 ID (email 사용)
+    id: number;
     email: string;
     name: string;
     createdAt: string;
@@ -12,7 +12,7 @@ export interface User {
 
 // 사용자 프로필 (User와 1:1)
 export interface UserProfile {
-    userId: string;
+    userId: number;
     name?: string;
     studentId: string | undefined;
     major: string;
@@ -27,7 +27,7 @@ export interface UserProfile {
 
 // 졸업 정보 (User와 1:1)
 export interface GraduationInfo {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     totalCredits: number;
     majorRequired: number;
     majorElective: number;
@@ -43,7 +43,7 @@ export interface GraduationInfo {
 
 // 커리큘럼 (User와 1:1)
 export interface Curriculum {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     type: string;
     subjects: Subject[];
     completedSubjects: string[];
@@ -55,7 +55,7 @@ export interface Curriculum {
 
 // 과목 정의
 export interface Subject {
-    id: string;
+    id: number;
     name: string;
     code: string;
     credits: number;
@@ -68,7 +68,7 @@ export interface Subject {
 
 // 시간표 정보 (User와 1:1)
 export interface Schedule {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     currentSemester: string;
     timetable: Course[];
     customEvents: CustomEvent[];
@@ -77,7 +77,7 @@ export interface Schedule {
 
 export interface TimetableSlot {
     courseName: string;
-    id: string;
+    id: number;
     subjectId: string;
     subjectName: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
@@ -91,7 +91,7 @@ export interface TimetableSlot {
 }
 
 export interface CustomEvent {
-    id: string;
+    id: number;
     title: string;
     description?: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
@@ -103,7 +103,7 @@ export interface CustomEvent {
 
 // 온보딩 정보 (User와 1:1)
 export interface Onboarding {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     isCompleted: boolean;
     currentStep: number;
     completedSteps: string[];
@@ -114,7 +114,7 @@ export interface Onboarding {
 
 // 사용자 설정 (User와 1:1)
 export interface UserSettings {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     theme: 'light' | 'dark' | 'auto';
     notifications: boolean;
     autoSave: boolean;
@@ -134,7 +134,7 @@ export interface UserSettings {
 
 // 사용자 통계 (User와 1:1)
 export interface UserStatistics {
-    userId: string; // User.id 참조
+    userId: number; // User.id 참조
     totalLoginCount: number;
     lastLoginDate: string;
     totalStudyTime: number; // 분 단위
@@ -147,7 +147,7 @@ export interface UserStatistics {
 
 // 메모 (User와 1:N)
 export interface Note {
-    id: string;
+    id: number;
     userId?: string | undefined;
     title: string;
     content: string;
@@ -162,8 +162,8 @@ export interface Note {
 
 // 채팅 메시지 (User와 1:N)
 export interface ChatMessage {
-    id: string;
-    userId: string; // User.id 참조
+    id: number;
+    userId: number; // User.id 참조
     content: string;
     sender: 'user' | 'assistant';
     timestamp: string;
@@ -177,8 +177,8 @@ export interface ChatMessage {
 
 // 알림 (User와 1:N)
 export interface NotificationItem {
-    id: string;
-    userId: string; // User.id 참조
+    id: number;
+    userId: number; // User.id 참조
     title: string;
     message: string;
     type: 'info' | 'warning' | 'success' | 'error';
@@ -193,30 +193,30 @@ export const StorageKeys = {
     currentUser: () => 'currentUser',
 
     // 1:1 관계 엔티티들
-    userProfile: (userId: string) => `user_${userId}_profile`,
-    graduationInfo: (userId: string) => `user_${userId}_graduation`,
-    curriculum: (userId: string) => `user_${userId}_curriculum`,
-    schedule: (userId: string) => `user_${userId}_schedule`,
-    onboarding: (userId: string) => `user_${userId}_onboarding`,
-    settings: (userId: string) => `user_${userId}_settings`,
-    statistics: (userId: string) => `user_${userId}_statistics`,
+    userProfile: (userId: number) => `user_${userId}_profile`,
+    graduationInfo: (userId: number) => `user_${userId}_graduation`,
+    curriculum: (userId: number) => `user_${userId}_curriculum`,
+    schedule: (userId: number) => `user_${userId}_schedule`,
+    onboarding: (userId: number) => `user_${userId}_onboarding`,
+    settings: (userId: number) => `user_${userId}_settings`,
+    statistics: (userId: number) => `user_${userId}_statistics`,
 
     // 1:N 관계 엔티티들
-    notes: (userId: string) => `user_${userId}_notes`,
-    messages: (userId: string) => `user_${userId}_messages`,
-    notifications: (userId: string) => `user_${userId}_notifications`,
+    notes: (userId: number) => `user_${userId}_notes`,
+    messages: (userId: number) => `user_${userId}_messages`,
+    notifications: (userId: number) => `user_${userId}_notifications`,
 
     // 기존 호환성을 위한 배열 데이터
-    courses: (userId: string) => `user_${userId}_courses`,
-    completedCourses: (userId: string) => `user_${userId}_completedCourses`,
-    timetableCourses: (userId: string) => `user_${userId}_timetableCourses`,
-    graduationRequirements: (userId: string) => `user_${userId}_graduationRequirements`,
-    favorites: (userId: string) => `user_${userId}_favorites`,
-    recentSearches: (userId: string) => `user_${userId}_recentSearches`,
+    courses: (userId: number) => `user_${userId}_courses`,
+    completedCourses: (userId: number) => `user_${userId}_completedCourses`,
+    timetableCourses: (userId: number) => `user_${userId}_timetableCourses`,
+    graduationRequirements: (userId: number) => `user_${userId}_graduationRequirements`,
+    favorites: (userId: number) => `user_${userId}_favorites`,
+    recentSearches: (userId: number) => `user_${userId}_recentSearches`,
 };
 
 // 기본값 생성 함수들
-export const createDefaultUserProfile = (userId: string): UserProfile => ({
+export const createDefaultUserProfile = (userId: number): UserProfile => ({
     userId,
     studentId: '',
     major: '',
@@ -229,7 +229,7 @@ export const createDefaultUserProfile = (userId: string): UserProfile => ({
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultGraduationInfo = (userId: string): GraduationInfo => ({
+export const createDefaultGraduationInfo = (userId: number): GraduationInfo => ({
     userId,
     totalCredits: 0,
     majorRequired: 0,
@@ -244,7 +244,7 @@ export const createDefaultGraduationInfo = (userId: string): GraduationInfo => (
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultCurriculum = (userId: string): Curriculum => ({
+export const createDefaultCurriculum = (userId: number): Curriculum => ({
     userId,
     type: '',
     subjects: [],
@@ -255,7 +255,7 @@ export const createDefaultCurriculum = (userId: string): Curriculum => ({
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultSchedule = (userId: string): Schedule => ({
+export const createDefaultSchedule = (userId: number): Schedule => ({
     userId,
     currentSemester: '',
     timetable: [],
@@ -263,7 +263,7 @@ export const createDefaultSchedule = (userId: string): Schedule => ({
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultOnboarding = (userId: string): Onboarding => ({
+export const createDefaultOnboarding = (userId: number): Onboarding => ({
     userId,
     isCompleted: false,
     currentStep: 0,
@@ -273,7 +273,7 @@ export const createDefaultOnboarding = (userId: string): Onboarding => ({
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultSettings = (userId: string): UserSettings => ({
+export const createDefaultSettings = (userId: number): UserSettings => ({
     userId,
     theme: 'light',
     notifications: true,
@@ -288,7 +288,7 @@ export const createDefaultSettings = (userId: string): UserSettings => ({
     updatedAt: new Date().toISOString()
 });
 
-export const createDefaultStatistics = (userId: string): UserStatistics => ({
+export const createDefaultStatistics = (userId: number): UserStatistics => ({
     userId,
     totalLoginCount: 0,
     lastLoginDate: new Date().toISOString(),
@@ -301,7 +301,7 @@ export const createDefaultStatistics = (userId: string): UserStatistics => ({
 }); 
 
 export interface Course {
-    id: string;
+    id: number;
     name: string;
     code: string;
     instructor: string;

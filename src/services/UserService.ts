@@ -48,7 +48,7 @@ export class UserService {
     /**
      * 사용자 ID로 조회
      */
-    async getUserById(id: string): Promise<UserProfile> {
+    async getUserById(id: number): Promise<UserProfile> {
         const user = await userRepository.findById(id);
         if (!user) {
             throw new ApiError(
@@ -106,7 +106,7 @@ export class UserService {
     /**
      * 사용자 정보 업데이트
      */
-    async updateUser(id: string, data: UserUpdateDTO): Promise<UserProfile> {
+    async updateUser(id: number, data: UserUpdateDTO): Promise<UserProfile> {
         // Check if user exists
         await this.getUserById(id);
 
@@ -135,7 +135,7 @@ export class UserService {
     /**
      * 사용자 삭제
      */
-    async deleteUser(id: string): Promise<void> {
+    async deleteUser(id: number): Promise<void> {
         // Check if user exists
         await this.getUserById(id);
 
@@ -153,7 +153,7 @@ export class UserService {
     /**
      * 사용자 전체 데이터 조회
      */
-    async getUserData(id: string): Promise<UserData> {
+    async getUserData(id: number): Promise<UserData> {
         const userData = await userRepository.getUserData(id);
         if (!userData) {
             throw new ApiError(
@@ -168,7 +168,7 @@ export class UserService {
      * 사용자 설정 업데이트
      */
     async updateUserSettings(
-        id: string,
+        id: number,
         settings: Partial<UserSettings>
     ): Promise<void> {
         // Check if user exists

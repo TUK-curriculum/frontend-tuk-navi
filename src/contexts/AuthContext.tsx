@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { RequirementCourse } from '../data/graduationRequirements';
+import { Course as RequirementCourse } from '../data/graduationRequirements';
 import { setupApiInterceptors } from '../utils/apiClient';
 import { authRepository, LoginDTO, RegisterDTO } from '../repositories/AuthRepository';
 import { apiService } from '../services/ApiService';
@@ -7,8 +7,8 @@ import { apiService } from '../services/ApiService';
 import { UserProfile } from '../types/user';
 
 interface User {
-    id: string;
-    userId: string;
+    id: number;
+    userId: number;
     name: string;
     email: string;
     profile?: UserProfile;

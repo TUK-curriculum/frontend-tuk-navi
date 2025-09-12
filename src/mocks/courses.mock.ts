@@ -181,7 +181,7 @@ export const getMockCourses = async (options?: QueryOptions): Promise<Course[]> 
     return courses;
 };
 
-export const getMockCourseById = async (id: string): Promise<Course | null> => {
+export const getMockCourseById = async (id: number): Promise<Course | null> => {
     return mockCourses.get(id) || null;
 };
 
@@ -219,7 +219,7 @@ export const createMockCourse = async (data: CourseCreateDTO): Promise<Course> =
     return newCourse;
 };
 
-export const updateMockCourse = async (id: string, data: CourseUpdateDTO): Promise<Course> => {
+export const updateMockCourse = async (id: number, data: CourseUpdateDTO): Promise<Course> => {
     const course = mockCourses.get(id);
     if (!course) {
         throw new Error('Course not found');
@@ -240,7 +240,7 @@ export const updateMockCourse = async (id: string, data: CourseUpdateDTO): Promi
     return updatedCourse;
 };
 
-export const deleteMockCourse = async (id: string): Promise<boolean> => {
+export const deleteMockCourse = async (id: number): Promise<boolean> => {
     return mockCourses.delete(id);
 };
 

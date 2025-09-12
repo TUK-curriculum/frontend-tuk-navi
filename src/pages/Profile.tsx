@@ -9,7 +9,7 @@ import { apiClient } from '../utils/apiClient';
 import { apiService } from '../services/ApiService'; 
 
 interface GraduationStudent {
-    id: string;
+    id: number;
     name: string;
     dept: string;
     curriculumYear: number;

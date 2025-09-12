@@ -23,11 +23,11 @@ export class NoteService {
         return noteRepository.create(data);
     }
 
-    update(id: string, data: NoteUpdateDTO): Promise<Note> {
+    update(id: number, data: NoteUpdateDTO): Promise<Note> {
         return noteRepository.update(id, data);
     }
 
-    delete(id: string): Promise<boolean> {
+    delete(id: number): Promise<boolean> {
         return noteRepository.delete(id);
     }
 }
@@ -57,11 +57,11 @@ export class NoteService {
         return noteRepository.create(data);
     }
 
-    update(id: string, data: NoteUpdateDTO): Promise<Note> {
+    update(id: number, data: NoteUpdateDTO): Promise<Note> {
         return noteRepository.update(id, data);
     }
 
-    delete(id: string): Promise<boolean> {
+    delete(id: number): Promise<boolean> {
         return noteRepository.delete(id);
     }
 }

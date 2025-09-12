@@ -2,7 +2,7 @@ import { BaseRepository } from './BaseRepository';
 import apiClient from '../config/apiClient';
 
 export interface UserProfile {
-    userId: string;
+    userId: number;
     name: string;
     email: string;
     studentId?: string;

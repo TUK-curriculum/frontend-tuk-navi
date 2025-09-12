@@ -19,7 +19,7 @@ const OcrResultModal: React.FC<OcrResultModalProps> = ({ open, onClose, suggesti
         }
     }, [open, suggestions]);
 
-    const handleToggle = (id: string) => {
+    const handleToggle = (id: number) => {
         const newSelected = new Set(selected);
         if (newSelected.has(id)) {
             newSelected.delete(id);

@@ -4,7 +4,7 @@ import GlassCard from './GlassCard';
 
 export interface CourseChipProps {
     course: {
-        id: string;
+        id: number;
         name: string;
         code: string;
         instructor: string;

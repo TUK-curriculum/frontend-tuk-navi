@@ -196,7 +196,7 @@ export const getMockUsers = async (options: QueryOptions = {}): Promise<UserProf
     return users;
 };
 
-export const getMockUserById = async (id: string): Promise<UserProfile | null> => {
+export const getMockUserById = async (id: number): Promise<UserProfile | null> => {
     const userData = mockUsers.get(id);
     return userData ? userData.profile : null;
 };
@@ -278,7 +278,7 @@ export const createMockUser = async (data: UserCreateDTO): Promise<UserProfile> 
     return newUserData.profile;
 };
 
-export const updateMockUser = async (id: string, data: UserUpdateDTO): Promise<UserProfile> => {
+export const updateMockUser = async (id: number, data: UserUpdateDTO): Promise<UserProfile> => {
     const userData = mockUsers.get(id);
     if (!userData) {
         throw new Error('User not found');
@@ -293,16 +293,16 @@ export const updateMockUser = async (id: string, data: UserUpdateDTO): Promise<U
     return userData.profile;
 };
 
-export const deleteMockUser = async (id: string): Promise<boolean> => {
+export const deleteMockUser = async (id: number): Promise<boolean> => {
     return mockUsers.delete(id);
 };
 
-export const getMockUserData = async (id: string): Promise<UserData | null> => {
+export const getMockUserData = async (id: number): Promise<UserData | null> => {
     return mockUsers.get(id) || null;
 };
 
 export const updateMockUserSettings = async (
-    id: string,
+    id: number,
     settings: Partial<UserSettings>
 ): Promise<boolean> => {
     const userData = mockUsers.get(id);

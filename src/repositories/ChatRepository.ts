@@ -1,24 +1,31 @@
-import { ChatMessage } from '../types/chat-message';
-import apiClient from '../config/apiClient';
-import { apiEndpoints, environment } from '../config/environment';
+import axios from "axios";
+import { ChatMessage } from "../types/chat-message";
 
-export class ChatRepository {
-    async history(limit = 100): Promise<ChatMessage[]> {
-        if (environment.mockMode) {
-            const { getMockChatHistory } = await import('../mocks/users.mock');
-            return getMockChatHistory(limit);
-        }
-        const query = `?limit=${limit}`;
-        return apiClient.get<ChatMessage[]>(`${apiEndpoints.chat.history}${query}`);
-    }
+class ChatRepository {
+  async history(userId: number, limit = 100): Promise<ChatMessage[]> {
+    const res = await axios.get("http://localhost:8000/chat/history", {
+      params: { userId, limit },
+      withCredentials: true,
+    });
+    return res.data.chatHistory || [];
+  }
 
-    async sendMessage(content: string, metadata: Record<string, any> = {}): Promise<ChatMessage> {
-        if (environment.mockMode) {
-            const { createMockChatMessage } = await import('../mocks/users.mock');
-            return createMockChatMessage(content);
-        }
-        return apiClient.post<ChatMessage>(apiEndpoints.chat.messages, { content, metadata });
-    }
+  async historyBySession(sessionId: number, limit = 100): Promise<ChatMessage[]> {
+    const res = await axios.get("http://localhost:8000/chat/history/session", {
+      params: { sessionId, limit },
+      withCredentials: true,
+    });
+    return res.data.chatHistory || [];
+  }
+
+  async sendMessage(content: string, metadata: Record<string, any> = {}): Promise<ChatMessage> {
+    const res = await axios.post(
+      "http://localhost:8000/chat/send",
+      { content, metadata },
+      { withCredentials: true }
+    );
+    return res.data;
+  }
 }
 
-export const chatRepository = new ChatRepository(); 
+export const chatRepository = new ChatRepository();

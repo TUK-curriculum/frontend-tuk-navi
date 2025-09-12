@@ -20,7 +20,7 @@ import type { Course as StoreCourse } from '../stores/graduationStore';
 // 타입 정의
 interface GraduationState {
     step: number;
-    id: string;
+    id: number;
     name: string;
     dept: string;
     curriculumYear: number;
@@ -66,7 +66,7 @@ function reducer(state: GraduationState, action: GraduationAction): GraduationSt
 }
 
 // 입력 검증 함수들
-const validateStudentId = (id: string): boolean => {
+const validateStudentId = (id: number): boolean => {
     return /^\d{10}$/.test(id);
 };
 
@@ -80,7 +80,7 @@ const validateCurriculumYear = (year: number): boolean => {
 
 // Step1 컴포넌트 - 입력 검증 추가
 interface Step1Props {
-    id: string;
+    id: number;
     name: string;
     dept: string;
     curriculumYear: number;

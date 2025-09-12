@@ -19,14 +19,14 @@ export const apiEndpoints = {
     },
     users: {
         list: '/users',
-        detail: (id: string) => `/users/${id}`,
-        update: (id: string) => `/users/${id}`,
-        delete: (id: string) => `/users/${id}`,
-        settings: (id: string) => `/users/${id}/settings`,
+        detail: (id: number) => `/users/${id}`,
+        update: (id: number) => `/users/${id}`,
+        delete: (id: number) => `/users/${id}`,
+        settings: (id: number) => `/users/${id}/settings`,
     },
     courses: {
         list: '/courses',
-        detail: (id: string) => `/courses/${id}`,
+        detail: (id: number) => `/courses/${id}`,
         search: '/courses/search',
         enroll: '/courses/enroll',
         drop: '/courses/drop',
@@ -49,11 +49,11 @@ export const apiEndpoints = {
     },
     notes: {
         list: '/notes',
-        detail: (id: string) => `/notes/${id}`,
+        detail: (id: number) => `/notes/${id}`,
     },
     notifications: {
         list: '/notifications',
-        read: (id: string) => `/notifications/${id}/read`,
+        read: (id: number) => `/notifications/${id}/read`,
         readBulk: '/notifications/read'
     },
     chat: {

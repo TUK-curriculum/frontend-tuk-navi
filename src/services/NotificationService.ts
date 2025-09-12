@@ -17,7 +17,7 @@ export class NotificationService {
         return notificationRepository.markRead(ids);
     }
 
-    markReadSingle(id: string): Promise<void> {
+    markReadSingle(id: number): Promise<void> {
         return notificationRepository.markReadSingle(id);
     }
 }
@@ -41,7 +41,7 @@ export class NotificationService {
         return notificationRepository.markRead(ids);
     }
 
-    markReadSingle(id: string): Promise<void> {
+    markReadSingle(id: number): Promise<void> {
         return notificationRepository.markReadSingle(id);
     }
 }

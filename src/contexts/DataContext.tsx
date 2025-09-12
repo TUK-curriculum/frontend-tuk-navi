@@ -176,8 +176,8 @@ interface DataContextType {
     // 메모 관리
     notes: Note[];
     addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => void;
-    updateNote: (id: string, note: Partial<Note>) => void;
-    deleteNote: (id: string) => void;
+    updateNote: (id: number, note: Partial<Note>) => void;
+    deleteNote: (id: number) => void;
 
     // 채팅 메시지 관리
     messages: ChatMessage[];
@@ -347,7 +347,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('statistics', updatedStats);
     }, [userData]);
 
-    const updateNote = useCallback((id: string, note: Partial<Note>) => {
+    const updateNote = useCallback((id: number, note: Partial<Note>) => {
         if (!userData) return;
         const updatedNotes = userData.notes.map(n =>
             n.id === id ? { ...n, ...note, updatedAt: new Date().toISOString() } : n
@@ -357,7 +357,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('notes', updatedNotes);
     }, [userData]);
 
-    const deleteNote = useCallback((id: string) => {
+    const deleteNote = useCallback((id: number) => {
         if (!userData) return;
         const updatedNotes = userData.notes.filter(n => n.id !== id);
         const updatedData = { ...userData, notes: updatedNotes };

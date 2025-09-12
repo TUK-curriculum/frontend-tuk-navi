@@ -8,6 +8,7 @@ import mascot from '../assets/chatbot.png';
 import check from "../assets/check.png";
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { chatService } from "../services/ChatService";
 
 // 사용자 정보 타입
 interface ChatbotUserProfile {
@@ -21,26 +22,18 @@ interface ChatbotUserProfile {
 
 // WebSocket 메시지 타입
 interface WebSocketMessage {
+    type?: string;
+    sessionId?: number;
     message?: string;
     recommended_lectures?: string[];
 }
 
 // 기본 메시지 타입
 interface Message {
-    sender: "user" | "bot";
-    text: string;
+    sender: "user" | "assistant";
+    content: string;
+    timestamp?: string;
 }
-
-// 세션 관리 API
-const getChatHistory = async (): Promise<Message[]> => {
-    try {
-        const response = await axios.get("http://localhost:8000/chat/history", { withCredentials: true });
-        return response.data.chatHistory || [];
-    } catch (error) {
-        console.error("채팅 기록 조회 실패:", error);
-        return [];
-    }
-};
 
 let socket: WebSocket | null = null;
 let messageQueue: string[] = [];
@@ -54,15 +47,55 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     const location = useLocation();
     const { user } = useAuth();
     
-    const [messages, setMessages] = useState<Message[]>([
-        { sender: "bot", text: "안녕하세요! 무엇을 도와드릴까요?" }
-    ]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isComposing = useRef<boolean>(false);
     const reconnecting = useRef<boolean>(false);
+    const [sessionId, setSessionId] = useState<number | null>(null);
+
+    useEffect(() => {
+        connectWebSocket();
+        return () => {
+            if (socket) {
+            socket.close();
+            socket = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            if (!sessionId) {
+                console.log("[DEBUG] sessionId 없음 → API 호출 스킵");
+                return;
+            }
+
+            try {
+                const history = await chatService.historyBySession(sessionId);
+                const historyMessages = history.map(h => ({
+                    sender: h.sender,
+                    content: h.content,
+                    timestamp: h.timestamp
+                }));
+                
+                if (historyMessages.length === 0) {
+                    setMessages([{
+                        sender: "assistant",
+                        content: "안녕하세요! TUK NAVI입니다.\n\n개인화된 커리큘럼 추천을 도와드릴게요.\n커리큘럼 생성을 원하시면 언제든 말씀해주세요!"
+                    }]);
+                } else {
+                    setMessages(historyMessages);
+                }
+            } catch (err) {
+                console.error("채팅 기록 조회 실패:", err);
+            }
+        };
+
+        loadHistory();
+    }, [sessionId]);
 
     // WebSocket 연동 함수
     const flushMessageQueue = (): void => {
@@ -79,8 +112,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         if (socket && socket.readyState !== WebSocket.CLOSED) return;
 
         reconnecting.current = true;
-        socket = new WebSocket("ws://localhost:8000/ws");
+        
+        const token = localStorage.getItem("accessToken");
+        const url = token 
+            ? `ws://localhost:8000/ws?token=${token}`
+            : `ws://localhost:8000/ws`;
 
+        socket = new WebSocket(url);        
+        
         socket.onopen = (): void => {
             console.log("WebSocket 연결됨");
             reconnecting.current = false;
@@ -88,6 +127,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         };
 
         socket.onmessage = (event: MessageEvent): void => {
+            const data: WebSocketMessage = JSON.parse(event.data);
+
+            if (data.type === "session" && data.sessionId) {
+                console.log("세션 ID 수신:", data.sessionId);
+                setSessionId(data.sessionId);
+                return; 
+            }
+            
             console.log("WebSocket 메시지 수신:", event.data);
             setLoading(false);
             
@@ -128,7 +175,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 if (data.message) {
                     console.log("봇 메시지 추가:", data.message);
                     setMessages(prev => {
-                        const newMessages = [...prev, { sender: "bot" as const, text: data.message as string }];
+                        const newMessages = [...prev, { sender: "assistant" as const, content: data.message as string }];
                         console.log("업데이트된 메시지들:", newMessages);
                         return newMessages;
                     });
@@ -136,14 +183,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                     const lectures = data.recommended_lectures.join(", ");
                     console.log("추천 강의 메시지 추가:", lectures);
                     setMessages(prev => {
-                        const newMessages = [...prev, { sender: "bot" as const, text: `추천 강의: ${lectures}` }];
+                        const newMessages = [...prev, { sender: "assistant" as const, content: `추천 강의: ${lectures}` }];
                         console.log("업데이트된 메시지들:", newMessages);
                         return newMessages;
                     });
                 } else {
                     console.log("알 수 없는 메시지 형식:", data);
                     const messageText = JSON.stringify(data);
-                    setMessages(prev => [...prev, { sender: "bot" as const, text: messageText }]);
+                    setMessages(prev => [...prev, { sender: "assistant" as const, content: messageText }]);
                 }
             } catch (error) {
                 console.error("메시지 파싱 오류:", error);
@@ -151,7 +198,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 
                 // JSON 파싱이 실패하면 원본 텍스트 그대로 출력
                 if (typeof event.data === 'string') {
-                    setMessages(prev => [...prev, { sender: "bot" as const, text: event.data }]);
+                    setMessages(prev => [...prev, { sender: "assistant" as const, content: event.data }]);
                 }
             }
         };
@@ -171,7 +218,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         if (!input.trim()) return;
 
         const userMessage = input;
-        setMessages(prev => [...prev, { sender: "user", text: userMessage }]);
+        setMessages(prev => [...prev, { sender: "user", content: userMessage }]);
         setInput("");
         
         // 로딩 상태 추가 
@@ -211,27 +258,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         sendMessage();
     };
 
-    // WebSocket 연결 초기화 및 정리
-    useEffect(() => {
-        connectWebSocket();
-
-        return () => {
-            if (socket) {
-                socket.close();
-                socket = null;
-            }
-        };
-    }, []);
-
     // 메시지 변경 시 스크롤 하단으로 이동
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
     const renderMessage = (msg: Message, idx: number): React.ReactNode => {
-        if (msg.sender === "bot") {
+        if (msg.sender === "assistant") {
             // 조건 선택 메시지인지 확인
-            const isConditionMessage = msg.text.includes("조건을 모두 선택해 주세요") || msg.text.includes("조건:");
+            const isConditionMessage = msg.content.includes("조건을 모두 선택해 주세요") || msg.content.includes("조건:");
             
             if (isConditionMessage) {
                 // 조건 추출
@@ -305,7 +340,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                             // 사용자 메시지로 선택 결과 추가
                                             setMessages(prev => [...prev, { 
                                                 sender: "user", 
-                                                text: `선택한 조건: ${conditionsText}` 
+                                                content: `선택한 조건: ${conditionsText}` 
                                             }]);
                                             
                                             // WebSocket으로 전송
@@ -349,7 +384,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         <MessageBubble from="ai">
                             <div 
                                 dangerouslySetInnerHTML={{ 
-                                    __html: msg.text.replace(/\n/g, "<br>") 
+                                    __html: msg.content.replace(/\n/g, "<br>") 
                                 }} 
                             />
                         </MessageBubble>
@@ -359,7 +394,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         } else {
             return (
                 <MessageBubble from="user" key={idx}>
-                    {msg.text}
+                    {msg.content}
                 </MessageBubble>
             );
         }

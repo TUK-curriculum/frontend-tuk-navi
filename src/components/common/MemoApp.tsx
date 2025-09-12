@@ -67,7 +67,7 @@ import SortableMemoItem from '../SortableMemoItem';
 
 // 타입 정의
 interface Folder {
-    id: string;
+    id: number;
     name: string;
     color: string;
     icon: string;
@@ -75,8 +75,8 @@ interface Folder {
 }
 
 interface Memo {
-    id: string;
-    userId: string;
+    id: number;
+    userId: number;
     title: string;
     content: string;
     category: string;
@@ -492,7 +492,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         { section: '일반', memos: visibleMemos.filter(m => !m.pinned) }
     ].filter(g => g.memos.length > 0);
     // 메모 선택
-    const handleSelect = useCallback((id: string) => {
+    const handleSelect = useCallback((id: number) => {
         setSelectedId(id);
         const memo = memos.find(m => m.id === id);
         setEditTitle(memo?.title || '');
@@ -560,7 +560,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         }
     }, [addNote, selectedFolder, user, isDataReady, showSnackbar, notes]);
     // 메모 삭제
-    const handleDelete = useCallback(async (id: string) => {
+    const handleDelete = useCallback(async (id: number) => {
         console.log('[handleDelete] try delete', id, typeof id); // UUID(string)인지 확인
         await deleteNote(id);
         // notes 상태는 context에서 동기화됨
@@ -572,14 +572,14 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         showSnackbar('메모가 삭제되었습니다.', 'success');
     }, [deleteNote, showSnackbar]);
     // 고정/핀
-    const handlePin = useCallback(async (id: string) => {
+    const handlePin = useCallback(async (id: number) => {
         const memo = memos.find(m => m.id === id);
         if (memo) {
             await updateNote(id, { pinned: !memo.pinned } as Partial<Memo>);
         }
     }, [memos, updateNote]);
     // 보관
-    const handleArchive = useCallback(async (id: string) => {
+    const handleArchive = useCallback(async (id: number) => {
         const memo = memos.find(m => m.id === id);
         if (memo) {
             await updateNote(id, { archived: !memo.archived } as Partial<Memo>);
@@ -587,12 +587,12 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         }
     }, [memos, updateNote, showSnackbar]);
     // 폴더 이동 (category 변경)
-    const handleMoveToFolder = useCallback(async (id: string, folderId: string) => {
+    const handleMoveToFolder = useCallback(async (id: number, folderId: string) => {
         await updateNote(id, { category: folderId });
         showSnackbar('메모가 폴더로 이동되었습니다.', 'success');
     }, [updateNote, showSnackbar]);
     // 태그 추가/수정
-    const handleUpdateTags = useCallback(async (id: string, tags: string[]) => {
+    const handleUpdateTags = useCallback(async (id: number, tags: string[]) => {
         await updateNote(id, { tags });
         showSnackbar('태그가 업데이트되었습니다.', 'success');
     }, [updateNote, showSnackbar]);
@@ -667,12 +667,12 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         setAddFolderDialogOpen(false);
     };
     // 폴더 삭제
-    const handleDeleteFolder = (id: string) => {
+    const handleDeleteFolder = (id: number) => {
         setFolders(folders.filter(f => f.id !== id));
         if (selectedFolder === id) setSelectedFolder('all');
     };
     // 폴더 이름변경
-    const handleEditFolder = (id: string, name: string) => {
+    const handleEditFolder = (id: number, name: string) => {
         setFolders(folders.map(f => f.id === id ? { ...f, name } : f));
         setEditingFolderId(null);
     };

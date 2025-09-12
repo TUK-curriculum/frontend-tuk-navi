@@ -36,8 +36,8 @@ declare global {
             simulateLogin: (email: string) => void;
             simulateLogout: () => void;
             testTimetableRendering: () => void;
-            compareDataStructures: (userId: string) => void;
-            exportUserData: (userId: string) => string;
+            compareDataStructures: (userId: number) => void;
+            exportUserData: (userId: number) => string;
         };
     }
 }
@@ -208,10 +208,10 @@ export function setupDevTools() {
             simulateLogin,
             simulateLogout,
             testTimetableRendering,
-            compareDataStructures: (userId: string) => {
+            compareDataStructures: (userId: number) => {
                 compareDataStructures(userId);
             },
-            exportUserData: (userId: string) => {
+            exportUserData: (userId: number) => {
                 return exportUserData(userId);
             }
         };
