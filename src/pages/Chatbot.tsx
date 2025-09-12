@@ -113,7 +113,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
 
         reconnecting.current = true;
         
-        const token = localStorage.getItem("accessToken");  // 🔑 accessToken 가져오기
+        const token = localStorage.getItem("accessToken");
         const url = token 
             ? `ws://localhost:8000/ws?token=${token}`
             : `ws://localhost:8000/ws`;
