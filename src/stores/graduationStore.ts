@@ -18,7 +18,7 @@ interface GraduationState {
 
     // STEP 1: 학적 정보
     student: {
-        id: string
+        id: number
         name: string
         dept: string
         curriculumYear: number

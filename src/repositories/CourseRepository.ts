@@ -44,7 +44,7 @@ export class CourseRepository extends BaseRepository<Course> {
         return response.data;
     }
 
-    async findById(id: string): Promise<Course | null> {
+    async findById(id: number): Promise<Course | null> {
         try {
             const response = await apiClient.get<Course>(apiEndpoints.courses.detail(id));
             return response.data;
@@ -64,12 +64,12 @@ export class CourseRepository extends BaseRepository<Course> {
         return response.data;
     }
 
-    async update(id: string, data: CourseUpdateDTO): Promise<Course> {
+    async update(id: number, data: CourseUpdateDTO): Promise<Course> {
         const response = await apiClient.patch<Course>(apiEndpoints.courses.detail(id), data);
         return response.data;
     }
 
-    async delete(id: string): Promise<void> {
+    async delete(id: number): Promise<void> {
         await apiClient.delete(apiEndpoints.courses.detail(id));
     }
 

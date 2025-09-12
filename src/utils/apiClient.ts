@@ -433,7 +433,7 @@ export const apiClient = {
         },
 
         // 대화 로그 조회
-        getChatLogs: async (userId: string) => {
+        getChatLogs: async (userId: number) => {
             const response = await fetch(`${API_BASE_URL}/chat/chatting-logs/${userId}`, {
                 method: 'GET',
                 headers: createHeaders(),

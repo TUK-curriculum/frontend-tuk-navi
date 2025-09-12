@@ -45,7 +45,7 @@ export class CourseService {
   /**
    * 강의 ID로 조회
    */
-  async getCourseById(id: string): Promise<Course> {
+  async getCourseById(id: number): Promise<Course> {
     const course = await courseRepository.findById(id);
     if (!course) {
       throw new ApiError(
@@ -110,7 +110,7 @@ export class CourseService {
   /**
    * 강의 정보 업데이트
    */
-  async updateCourse(id: string, data: CourseUpdateDTO): Promise<Course> {
+  async updateCourse(id: number, data: CourseUpdateDTO): Promise<Course> {
     // Check if course exists
     await this.getCourseById(id);
 
@@ -141,7 +141,7 @@ export class CourseService {
   /**
    * 강의 삭제
    */
-  async deleteCourse(id: string): Promise<void> {
+  async deleteCourse(id: number): Promise<void> {
     // Check if course exists
     await this.getCourseById(id);
 

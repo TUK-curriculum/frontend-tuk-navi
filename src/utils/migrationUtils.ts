@@ -24,7 +24,7 @@ import {
 } from './separatedDataManager';
 
 // 기존 통합 데이터에서 분리 구조로 마이그레이션
-export const migrateUserDataToSeparatedStructure = (userId: string, legacyData: LegacyUserData): boolean => {
+export const migrateUserDataToSeparatedStructure = (userId: number, legacyData: LegacyUserData): boolean => {
     try {
         console.log(`사용자 ${userId}의 데이터를 분리 구조로 마이그레이션 시작...`);
 
@@ -241,7 +241,7 @@ export const migrateAllLegacyData = (): boolean => {
 };
 
 // 특정 사용자의 기존 데이터 확인 및 마이그레이션
-export const checkAndMigrateLegacyUserData = (userId: string): boolean => {
+export const checkAndMigrateLegacyUserData = (userId: number): boolean => {
     const legacyKey = `user_${userId}`;
     const legacyDataStr = localStorage.getItem(legacyKey);
 
@@ -291,7 +291,7 @@ export const isMigrationRequired = (): boolean => {
 };
 
 // 개발용: 데이터 구조 비교
-export const compareDataStructures = (userId: string): void => {
+export const compareDataStructures = (userId: number): void => {
     const legacyKey = `user_${userId}`;
     const legacyDataStr = localStorage.getItem(legacyKey);
 

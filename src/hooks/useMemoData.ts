@@ -74,7 +74,7 @@ export const useMemosData = () => {
     }, [addNote, user, notes.length, showSnackbar]);
 
     // 메모 업데이트
-    const handleUpdateMemo = useCallback(async (id: string, updates: Partial<Memo>) => {
+    const handleUpdateMemo = useCallback(async (id: number, updates: Partial<Memo>) => {
         try {
             await updateNote(id, updates);
             showSnackbar('메모가 업데이트되었습니다.', 'success');
@@ -85,7 +85,7 @@ export const useMemosData = () => {
     }, [updateNote, showSnackbar]);
 
     // 메모 삭제
-    const handleDeleteMemo = useCallback(async (id: string) => {
+    const handleDeleteMemo = useCallback(async (id: number) => {
         try {
             await deleteNote(id);
             showSnackbar('메모가 삭제되었습니다.', 'success');

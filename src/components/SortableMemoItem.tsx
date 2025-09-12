@@ -13,9 +13,9 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 interface SortableMemoItemProps {
     memo: Memo;
     isSelected: boolean;
-    onSelect: (id: string) => void;
-    onPin: (id: string) => void;
-    onDelete: (id: string) => void;
+    onSelect: (id: number) => void;
+    onPin: (id: number) => void;
+    onDelete: (id: number) => void;
 }
 
 // HTML 태그 제거 유틸 함수

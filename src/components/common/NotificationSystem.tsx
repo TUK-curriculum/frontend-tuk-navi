@@ -13,7 +13,7 @@ export type NotificationType = 'success' | 'error' | 'warning' | 'info';
 
 // 알림 데이터 인터페이스
 export interface NotificationData {
-    id: string;
+    id: number;
     type: NotificationType;
     title?: string;
     message: string;
@@ -25,7 +25,7 @@ export interface NotificationData {
 interface NotificationContextType {
     notifications: NotificationData[];
     showNotification: (notification: Omit<NotificationData, 'id'>) => void;
-    hideNotification: (id: string) => void;
+    hideNotification: (id: number) => void;
     clearAllNotifications: () => void;
 }
 
@@ -54,7 +54,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
     };
 
-    const hideNotification = (id: string) => {
+    const hideNotification = (id: number) => {
         setNotifications(prev => prev.filter(notification => notification.id !== id));
     };
 

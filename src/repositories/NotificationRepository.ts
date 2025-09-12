@@ -15,17 +15,17 @@ export class NotificationRepository extends BaseRepository<Notification> {
     }
 
     // Not implementing other CRUD; only read status
-    async findById(id: string): Promise<Notification | null> { return null; }
+    async findById(id: number): Promise<Notification | null> { return null; }
     async create(): Promise<Notification> { throw new Error('Not implemented'); }
-    async update(id: string, data: Partial<Notification>): Promise<Notification> { throw new Error('Not implemented'); }
-    async delete(id: string): Promise<boolean> { throw new Error('Not implemented'); }
+    async update(id: number, data: Partial<Notification>): Promise<Notification> { throw new Error('Not implemented'); }
+    async delete(id: number): Promise<boolean> { throw new Error('Not implemented'); }
 
     async markRead(ids: string[]): Promise<void> {
         if (!ids.length) return;
         await apiClient.put(apiEndpoints.notifications.readBulk, { ids });
     }
 
-    async markReadSingle(id: string): Promise<void> {
+    async markReadSingle(id: number): Promise<void> {
         await apiClient.put(apiEndpoints.notifications.read(id));
     }
 }

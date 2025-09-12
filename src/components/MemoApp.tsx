@@ -148,7 +148,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     }, [isResizing]);
 
     // 메모 선택 핸들러
-    const handleSelectMemo = useCallback((id: string) => {
+    const handleSelectMemo = useCallback((id: number) => {
         setSelectedId(id);
         const memo = memos.find(m => m.id === id);
         if (memo) {
@@ -217,7 +217,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     }, [handleAddMemo, selectedFolder]);
 
     // 메모 고정/해제 핸들러
-    const handlePin = useCallback(async (id: string) => {
+    const handlePin = useCallback(async (id: number) => {
         const memo = memos.find(m => m.id === id);
         if (memo) {
             await handleUpdateMemo(id, { pinned: !memo.pinned });
@@ -225,7 +225,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     }, [memos, handleUpdateMemo]);
 
     // 메모 삭제 핸들러
-    const handleDelete = useCallback(async (id: string) => {
+    const handleDelete = useCallback(async (id: number) => {
         await handleDeleteMemo(id);
         if (selectedId === id) {
             setSelectedId(null);

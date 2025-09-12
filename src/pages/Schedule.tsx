@@ -374,7 +374,7 @@ const Schedule: React.FC = () => {
     };
 
     // 과목 삭제 함수
-    const handleDeleteCourse = async (id: string) => {
+    const handleDeleteCourse = async (id: number) => {
         try {
             await apiClient.delete(`/timetable/course/${semester}/${id}`);
 

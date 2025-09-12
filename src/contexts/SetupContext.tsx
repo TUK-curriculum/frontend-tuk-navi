@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 import { useSeparatedData } from './SeparatedDataContext';
 
 export interface Course {
-    id: string;
+    id: number;
     name: string;
     type: '전필' | '전선' | '교양';
     credits: number;

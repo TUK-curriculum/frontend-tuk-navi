@@ -1,6 +1,6 @@
 // types.ts
 export interface Folder {
-    id: string;
+    id: number;
     name: string;
     color: string;
     icon: string;
@@ -8,8 +8,8 @@ export interface Folder {
 }
 
 export interface Memo {
-    id: string;
-    userId: string;
+    id: number;
+    userId: number;
     title: string;
     content: string;
     category: string;

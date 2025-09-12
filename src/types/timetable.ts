@@ -1,7 +1,7 @@
 import { Course } from './course';
 
 export interface TimetableCourse {
-    id: string;
+    id: number;
     name: string;
     code?: string;
     instructor?: string;

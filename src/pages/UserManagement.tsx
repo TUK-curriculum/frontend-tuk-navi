@@ -59,7 +59,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/SeparatedDataContext';
 
 interface User {
-    id: string;
+    id: number;
     name: string;
     email: string;
     role: 'admin' | 'user' | 'moderator';

@@ -34,7 +34,7 @@ export const useFolders = (memos: Memo[]) => {
     }, []);
 
     // 폴더 삭제
-    const handleDeleteFolder = useCallback((id: string) => {
+    const handleDeleteFolder = useCallback((id: number) => {
         setFolders(prev => prev.filter(f => f.id !== id));
         if (selectedFolder === id) {
             setSelectedFolder('all');
@@ -42,7 +42,7 @@ export const useFolders = (memos: Memo[]) => {
     }, [selectedFolder]);
 
     // 폴더 편집
-    const handleEditFolder = useCallback((id: string, name: string) => {
+    const handleEditFolder = useCallback((id: number, name: string) => {
         if (!name.trim()) return;
         
         setFolders(prev => prev.map(f => 

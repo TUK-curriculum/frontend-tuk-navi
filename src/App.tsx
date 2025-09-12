@@ -128,17 +128,7 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
 
   // 챗봇 버튼 클릭 핸들러
   const handleChatbotClick = async () => {
-    try {
-      const { apiService } = await import('./services/ApiService');
-      const profile = await apiService.getProfile();
-      if (!profile || !profile.onboardingCompleted) onOpenOnboarding();
-      else handleNavigation('/chatbot');
-    } catch {
-      // fallback
-      const completed = userData?.onboarding?.isCompleted;
-      if (!completed) onOpenOnboarding();
-      else handleNavigation('/chatbot');
-    }
+    handleNavigation('/chatbot');
   };
 
   // 알림 클릭 시 읽음 처리
@@ -481,12 +471,12 @@ function AppContent() {
           <MemoApp open={memoOpen} onClose={() => setMemoOpen(false)} />
         </>
       )}
-      {/* 온보딩 모달 - 회원가입 후 자동 표시 */}
+      {/*
       <InterestSelection
         open={onboardingOpen}
         onClose={() => setOnboardingOpen(false)}
         onComplete={handleOnboardingComplete}
-      />
+      /> */}
       {/* 계정 설정 모달 */}
       <AccountSettings open={accountSettingsOpen} onClose={() => setAccountSettingsOpen(false)} />
     </AuthGuard>

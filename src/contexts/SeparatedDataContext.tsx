@@ -93,8 +93,8 @@ interface SeparatedDataContextType {
     updateSchedule: (schedule: Partial<Schedule>) => void;
     notes: Note[];
     addNote: (note: Omit<Note, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<Note | null>;
-    updateNote: (id: string, note: Partial<Note>) => Promise<Note | null>;
-    deleteNote: (id: string) => Promise<boolean>;
+    updateNote: (id: number, note: Partial<Note>) => Promise<Note | null>;
+    deleteNote: (id: number) => Promise<boolean>;
     messages: ChatMessage[];
     addMessage: (message: Omit<ChatMessage, 'id' | 'userId' | 'timestamp'>) => void;
     clearMessages: () => void;
@@ -219,7 +219,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     }, [currentUserId, user]);
 
     // 4. notes 수정
-    const updateNote = useCallback(async (id: string, updates: Partial<Note>): Promise<Note | null> => {
+    const updateNote = useCallback(async (id: number, updates: Partial<Note>): Promise<Note | null> => {
         if (!currentUserId && !user?.email) return null;
         try {
             const { apiService } = await import('../services/ApiService');
@@ -251,7 +251,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     }, [currentUserId, user]);
 
     // 5. notes 삭제
-    const deleteNote = useCallback(async (id: string): Promise<boolean> => {
+    const deleteNote = useCallback(async (id: number): Promise<boolean> => {
         if (!currentUserId && !user?.email) return false;
         try {
             const { apiService } = await import('../services/ApiService');

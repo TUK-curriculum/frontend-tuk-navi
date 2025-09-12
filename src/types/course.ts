@@ -2,7 +2,7 @@ export type DayKey = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' 
 export type CourseType = 'GR' | 'GE' | 'MR' | 'ME' | 'RE' | 'FE';
 
 export interface CourseCore {
-    id: string;
+    id: number;
     name: string; 
     code: string; 
     day: DayKey; 
