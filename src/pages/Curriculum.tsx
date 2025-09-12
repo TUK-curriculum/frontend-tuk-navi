@@ -185,7 +185,7 @@ const getStatusChip = (lecture: CurriculumLecture | string) => {
         case 'off-track':
             return { label: '미이수', color: 'warning' as const };
         default:
-            return { label: '미정', color: 'default' as const };
+            return { label: '수강예정', color: 'default' as const };
     }
 };
 
