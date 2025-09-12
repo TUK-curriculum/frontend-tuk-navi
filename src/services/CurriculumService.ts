@@ -15,56 +15,32 @@ import {
     SemesterBreakdown,
     CurriculumLecture,
 } from '../types/curriculum';
+import { BackendRecord } from './ApiService';
 
 class CurriculumService {
     private readonly baseUrl = '/curriculums';
 
     /**
-     * 사용자의 모든 커리큘럼 조회 (Records 정보와 함께)
+     * 사용자의 모든 커리큘럼 조회
      */
     async getCurriculums(defaultOnly: boolean = false): Promise<Curriculum[]> {
         try {
             const url = defaultOnly
                 ? `${this.baseUrl}?defaultOnly=true`
                 : this.baseUrl;
-                
-            // 커리큘럼 목록 조회
-            const curriculumResponse = await apiClient.get<{ success: boolean; curriculums: Curriculum[] }>(url);
 
-            if (!curriculumResponse.data.success) {
+            const response = await apiClient.get<{ success: boolean; curriculums: Curriculum[] }>(url);
+
+            if (!response.data.success) {
                 throw new Error('커리큘럼 목록을 불러오는데 실패했습니다.');
             }
 
-            // 수강내역 조회하여 이수 상태 매핑
-            const curriculums = await this.enrichWithRecords(curriculumResponse.data.curriculums);
-            return curriculums;
+            return response.data.curriculums;
         } catch (error) {
             console.error('Failed to fetch curriculums:', error);
             throw new Error('커리큘럼 목록을 불러오는데 실패했습니다.');
         }
     }
-
-    /**
-     * 수강내역 정보와 함께 커리큘럼 정보 수정
-     */
-    private async enrichWithRecords(curriculums: Curriculum[]): Promise<Curriculum[]> {
-        try {
-            const recordsResponse = await apiClient.get('/records');
-            const records = recordsResponse.data.records || [];
-
-            return curriculums.map(curriculum => ({
-                ...curriculum,
-                lectures: curriculum.lectures?.map(lecture => ({
-                    ...lecture,
-                    courseName: lecture.name
-                }))
-            }));
-        } catch (error) {
-            console.error('Failed to fetch records:', error);
-            return curriculums;
-        }
-    }
-
 
     /**
      * 특정 커리큘럼 상세 조회
