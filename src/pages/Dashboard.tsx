@@ -204,9 +204,10 @@ const Dashboard: React.FC = () => {
         if (!user?.email) return;
         try {
             const { apiService } = await import('../services/ApiService');
-            const [profileData, dashboardData] = await Promise.all([
+            const [profileData, dashboardData, creditSummary] = await Promise.all([
                 apiService.getProfile(),
-                apiService.getDashboardSummary()
+                apiService.getDashboardSummary(),
+                apiService.getCreditSummary()
                 ]);
 
             if (dashboardData?.thresholds) {
@@ -219,7 +220,7 @@ const Dashboard: React.FC = () => {
 
             dispatch({
                 type: 'SET_BACKEND_DATA',
-                payload: { ...dashboardData, profile: profileData }
+                payload: { ...dashboardData, profile: profileData, creditSummary: creditSummary }
             });
             dispatch({ type: 'SET_LOADING', payload: false });
         } catch (error) {
@@ -238,8 +239,10 @@ const Dashboard: React.FC = () => {
 
         const onboarding = userData.onboarding || {};
         const backendProfile = backendData.profile;
+        const creditSummary = backendData.creditSummary;
 
         return {
+            name: backendProfile?.name || userData.profile?.name || user?.name || '학생',
             grade: backendProfile?.grade || userData.profile?.grade || onboarding.year || '-',
             credits: backendData.totalCredits || backendProfile?.completedCredits || userData.graduationInfo?.totalCredits || onboarding.completedCredits || 0,
             courses: userData.completedCourses || [],
@@ -248,6 +251,7 @@ const Dashboard: React.FC = () => {
             department: backendProfile?.major || onboarding.department || userData.profile?.department || '미설정',
             remainingSemesters: backendProfile?.remainingSemesters || onboarding.remainingSemesters || 0,
             maxCreditsPerTerm: backendProfile?.maxCreditsPerTerm || onboarding.maxCreditsPerTerm || 18,
+            averageGrade: creditSummary?.averageGrade || 0,
             // 백엔드 데이터 추가
             upcomingCourses: backendData.upcomingCourses,
             recentNotes: backendData.recentNotes,
@@ -292,6 +296,7 @@ const Dashboard: React.FC = () => {
                     link: '/curriculum',
                     gradient: 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)'
                 },
+                /*
                 {
                     title: '외부 강의 추천',
                     value: '5개 강의',
@@ -300,7 +305,7 @@ const Dashboard: React.FC = () => {
                     color: '#fef7ed',
                     link: '/curriculum',
                     gradient: 'linear-gradient(135deg, rgba(251, 146, 60, 0.08) 0%, rgba(245, 101, 101, 0.05) 100%)'
-                },
+                },*/
                 {
                     title: '졸업까지',
                     value: `${graduationProgress}%`,
@@ -545,7 +550,7 @@ const Dashboard: React.FC = () => {
                                 letterSpacing: '-0.02em'
                             }}
                         >
-                            안녕하세요, {user?.profile?.nickname || user?.name || '학생'}님! 👋
+                            안녕하세요, {userInfo?.name || '학생'}님! 👋
                         </Typography>
                         <Typography
                             variant="h6"
@@ -829,7 +834,7 @@ const Dashboard: React.FC = () => {
                                                                             letterSpacing: '-0.01em'
                                                                         }}
                                                                     >
-                                                                        {user?.name || '학생'}님의 상세 정보
+                                                                        {userInfo?.name || '학생'}님의 상세 정보
                                                                     </Typography>
                                                                     <Chip
                                                                         icon={<TrendingUpIcon sx={{ fontSize: 16 }} />}
@@ -852,7 +857,7 @@ const Dashboard: React.FC = () => {
                                                         {/* Enhanced stats grid with InterestSelection data */}
                                                         <Grid container spacing={{ xs: 2.5, md: 3 }}>
                                                             {/* 첫 번째 행 - 기본 정보 */}
-                                                            <Grid item xs={6} md={3}>
+                                                            <Grid item xs={6} md={4}>
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: 20 }}
                                                                     animate={{ opacity: 1, y: 0 }}
@@ -902,7 +907,7 @@ const Dashboard: React.FC = () => {
                                                                 </motion.div>
                                                             </Grid>
 
-                                                            <Grid item xs={6} md={3}>
+                                                            <Grid item xs={6} md={4}>
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: 20 }}
                                                                     animate={{ opacity: 1, y: 0 }}
@@ -952,57 +957,7 @@ const Dashboard: React.FC = () => {
                                                                 </motion.div>
                                                             </Grid>
 
-                                                            <Grid item xs={6} md={3}>
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, y: 20 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    transition={{ delay: 0.3 }}
-                                                                >
-                                                                    <Paper elevation={0} sx={{
-                                                                        textAlign: 'center',
-                                                                        p: { xs: 2.5, md: 3 },
-                                                                        borderRadius: 4,
-                                                                        background: 'rgba(168, 85, 247, 0.06)',
-                                                                        border: '1px solid rgba(168, 85, 247, 0.12)',
-                                                                        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                                                                        cursor: 'pointer',
-                                                                        '&:hover': {
-                                                                            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.06) 0%, rgba(255, 255, 255, 0.8) 100%)',
-                                                                            transform: 'translateY(-4px)',
-                                                                            boxShadow: '0 12px 28px rgba(168, 85, 247, 0.2), 0 4px 12px rgba(168, 85, 247, 0.15)'
-                                                                        }
-                                                                    }}>
-                                                                        <Typography
-                                                                            variant="body2"
-                                                                            color="text.secondary"
-                                                                            sx={{
-                                                                                mb: { xs: 1.5, md: 2 },
-                                                                                fontWeight: 700,
-                                                                                fontSize: { xs: '0.8rem', md: '0.85rem' },
-                                                                                letterSpacing: '0.5px',
-                                                                                textTransform: 'uppercase'
-                                                                            }}
-                                                                        >
-                                                                            잔여 학기
-                                                                        </Typography>
-                                                                        <Typography
-                                                                            variant="h3"
-                                                                            fontWeight={900}
-                                                                            sx={{
-                                                                                color: '#a855f7',
-                                                                                fontSize: { xs: '1.6rem', md: '2rem' },
-                                                                                mb: { xs: 0.5, md: 1 },
-                                                                                letterSpacing: '-0.02em',
-                                                                                lineHeight: 1
-                                                                            }}
-                                                                        >
-                                                                            {userInfo.remainingSemesters || '-'}
-                                                                        </Typography>
-                                                                    </Paper>
-                                                                </motion.div>
-                                                            </Grid>
-
-                                                            <Grid item xs={6} md={3}>
+                                                            <Grid item xs={6} md={4}>
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: 20 }}
                                                                     animate={{ opacity: 1, y: 0 }}
@@ -1033,7 +988,7 @@ const Dashboard: React.FC = () => {
                                                                                 textTransform: 'uppercase'
                                                                             }}
                                                                         >
-                                                                            최대 학점
+                                                                            평균 평점
                                                                         </Typography>
                                                                         <Typography
                                                                             variant="h3"
@@ -1046,13 +1001,13 @@ const Dashboard: React.FC = () => {
                                                                                 lineHeight: 1
                                                                             }}
                                                                         >
-                                                                            {userInfo.maxCreditsPerTerm}
+                                                                            {userInfo.averageGrade ? `${userInfo.averageGrade}/4.5` : '미산정'}
                                                                         </Typography>
                                                                     </Paper>
                                                                 </motion.div>
                                                             </Grid>
 
-                                                            {/* 두 번째 행 - 커리어 및 학과 정보 */}
+                                                            {/*
                                                             <Grid item xs={12} md={6}>
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: 20 }}
@@ -1104,8 +1059,9 @@ const Dashboard: React.FC = () => {
                                                                     </Paper>
                                                                 </motion.div>
                                                             </Grid>
+                                                            */}
 
-                                                            <Grid item xs={12} md={6}>
+                                                            <Grid item xs={12} md={12}>
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: 20 }}
                                                                     animate={{ opacity: 1, y: 0 }}
@@ -1157,7 +1113,7 @@ const Dashboard: React.FC = () => {
                                                                 </motion.div>
                                                             </Grid>
 
-                                                            {/* Enhanced interests section */}
+                                                            {/*
                                                             {userInfo.interests.length > 0 && (
                                                                 <Grid item xs={12}>
                                                                     <motion.div
@@ -1232,7 +1188,7 @@ const Dashboard: React.FC = () => {
                                                                         </Paper>
                                                                     </motion.div>
                                                                 </Grid>
-                                                            )}
+                                                            )}*/}
                                                         </Grid>
                                                     </Box>
                                                 </Paper>
@@ -1243,7 +1199,8 @@ const Dashboard: React.FC = () => {
                             </motion.div>
                         )}
 
-                        {/* Enhanced AI 추천 커리큘럼 섹션 */}
+                        
+                        {/*
                         <motion.div
                             variants={containerVariants}
                             initial="hidden"
@@ -1267,7 +1224,6 @@ const Dashboard: React.FC = () => {
                                                 overflow: 'hidden',
                                                 position: 'relative'
                                             }}>
-                                                {/* Enhanced background decoration */}
                                                 <Box sx={{
                                                     position: 'absolute',
                                                     top: -50,
@@ -1419,7 +1375,7 @@ const Dashboard: React.FC = () => {
                                     </Grid>
                                 </Grid>
                             </Box>
-                        </motion.div>
+                        </motion.div>*/}
                     </Box>
                 </motion.div>
             </AnimatePresence>

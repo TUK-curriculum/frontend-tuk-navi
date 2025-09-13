@@ -858,6 +858,33 @@ class ApiService {
         }
     }
 
+    // ==== 프로필 관리 ====
+    async getCreditSummary(): Promise<{
+        totalCredits: number;
+        majorCredits: number;
+        liberalCredits: number;
+        averageGrade: number;
+    } | null> {
+        try {
+            const { data: res } = await apiClient.get<ApiResponse<{
+                totalCredits: number;
+                majorCredits: number;
+                liberalCredits: number;
+                averageGrade: number;
+            }>>('/profile/summary');
+            
+            if (!res.success) {
+                console.warn('[ApiService] 학점 요약 null 값 반환');
+                return null;
+            }
+            
+            return res.data;
+        } catch (error: any) {
+            console.error('[ApiService] 학점 요약 정보 조회 실패:', error);
+            return null;
+        }
+    }
+
     // ===== 대시보드 요약 정보 =====
     async getDashboardSummary(): Promise<{
         totalCredits: number;
