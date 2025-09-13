@@ -80,7 +80,9 @@ import CurriculumDetailModal from '../components/curriculum/CurriculumDetailModa
 import CurriculumEditModal from '../components/curriculum/CurriculumEditModal';
 import LectureFormModal from '../components/curriculum/LectureFormModal';
 import LectureStatusModal from '../components/curriculum/LectureStatusModal';
+import ScheduleCreationModal from '../components/modals/ScheduleCreationModal';
 import apiClient from '../config/apiClient';
+import { apiService } from '@/services/ApiService';
 
 // Constants
 const CONSTANTS = {
@@ -660,16 +662,11 @@ const CurriculumTimeline: React.FC<CurriculumTimelineProps> = ({
                             variant="outlined"
                             startIcon={<ScheduleIcon />}
                             onClick={() => onCreateSchedule(curriculum)}
-                            disabled={relevantLectures.length === 0 || !relevantLectures.some(lecture =>
-                                lecture.dayOfWeek && lecture.courseName
-                            )}
-                            title={relevantLectures.length === 0 ?
-                                '시간표를 생성할 과목이 없습니다' :
-                                !relevantLectures.some(lecture =>
-                                    lecture.dayOfWeek && lecture.courseName
-                                ) ?
-                                    '시간 정보가 있는 과목이 없습니다' :
-                                    '시간표 생성'
+                            disabled={relevantLectures.length === 0}
+                            title={
+                                relevantLectures.length === 0
+                                ? '시간표를 생성할 과목이 없습니다'
+                                : '시간표 생성'
                             }
                         >
                             시간표 생성
@@ -883,6 +880,11 @@ const CurriculumPage: React.FC = () => {
     const [selectedGrade, setSelectedGrade] = useState<number>(1);
     const [selectedSemester, setSelectedSemester] = useState<'1' | '2' | 'S' | 'W'>('1');
     const [statusModalOpen, setStatusModalOpen] = useState(false);
+    const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+    const [selectedCurriculumForSchedule, setSelectedCurriculumForSchedule] = useState<{
+        id: number;
+        name: string;
+    } | null>(null);
 
     // 커리큘럼 생성(챗봇에서 전달) mock 데이터
     const newCurriculum = location.state?.newCurriculum;
@@ -1040,47 +1042,44 @@ const CurriculumPage: React.FC = () => {
         setSnackbar({ open: true, message: '과목이 저장되었습니다.', severity: 'success' });
     }, [loadCurricula]);
 
+    // 시간표 생성 핸들러
     const handleCreateSchedule = useCallback((curriculum: CurriculumType) => {
-        // 커리큘럼의 과목들을 시간표로 변환하여 저장
-        const lectures = curriculum.lectures || [];
-
-        if (lectures.length === 0) {
-            setSnackbar({ open: true, message: '시간표를 생성할 과목이 없습니다.', severity: 'warning' });
-            return;
-        }
-
-        // 유효한 강의 필터링 (시간 정보가 있는 강의만)
-        const validLectures = lectures.filter((lecture: any) => {
-            const hasTimeInfo = lecture.dayOfWeek;
-            const hasName = lecture.courseName;
-            return hasTimeInfo && hasName;
+        setSelectedCurriculumForSchedule({
+            id: curriculum.id,
+            name: curriculum.name
         });
+        setScheduleModalOpen(true);
+    }, []);
 
-        if (validLectures.length === 0) {
-            setSnackbar({
-                open: true,
-                message: '시간 정보가 있는 과목이 없습니다. 과목에 요일과 시간을 설정해주세요.',
-                severity: 'warning'
-            });
-            return;
-        }
+    // 생성된 시간표 저장 핸들러
+    const handleSaveSchedule = useCallback(
+        async (schedule: any) => {
+            try {
+                const data = await apiService.saveTimetable({
+                    semester: currentSemester,
+                    courses: schedule.lectures,
+                });
 
-        if (validLectures.length < lectures.length) {
-            setSnackbar({
-                open: true,
-                message: `${validLectures.length}개 과목으로 시간표를 생성합니다. (${lectures.length - validLectures.length}개 과목은 시간 정보가 없어 제외됨)`,
-                severity: 'info'
-            });
-        }
+                setSnackbar({
+                    open: true,
+                    message: '시간표가 현재 학기에 저장되었습니다!',
+                    severity: 'success',
+                });
 
-        // 시간표 페이지로 이동하면서 커리큘럼 데이터 전달
-        navigate('/schedule', {
-            state: {
-                fromCurriculum: curriculum,
-                lectures: validLectures
+                navigate('/schedule');
+            } catch (error) {
+                setSnackbar({
+                    open: true,
+                    message:
+                    error instanceof Error
+                        ? error.message
+                        : '시간표 저장 중 오류가 발생했습니다.',
+                    severity: 'error',
+                });
             }
-        });
-    }, [navigate]);
+        },
+        [navigate]
+    );
 
     // Loading state
     if (loading) {
@@ -1306,6 +1305,15 @@ const CurriculumPage: React.FC = () => {
                     loadCurricula();
                     setSnackbar({ open: true, message, severity: 'info' });
                 }}
+            />
+
+            {/* Schedule Creation Modal */}
+            <ScheduleCreationModal
+                open={scheduleModalOpen}
+                onClose={() => setScheduleModalOpen(false)}
+                curriculumId={selectedCurriculumForSchedule?.id || 0}
+                curriculumName={selectedCurriculumForSchedule?.name || ''}
+                onSaveSchedule={handleSaveSchedule}
             />
 
             {/* Snackbar */}

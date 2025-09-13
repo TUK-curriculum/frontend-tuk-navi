@@ -1,4 +1,6 @@
+import { GeneratedSchedule } from '@/types/user';
 import apiClient from '../config/apiClient';
+import { slotToCourse } from '@/utils/mapper';
 
 // 캐시와 debouncing을 위한 유틸리티
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -72,7 +74,7 @@ export interface BackendProfile {
 }
 
 export interface BackendRecord {
-    id: number;
+    id: string;
     courseName: string;
     courseCode: string;
     credits: number;
@@ -83,7 +85,7 @@ export interface BackendRecord {
 }
 
 export interface BackendCurriculum {
-    id: number;
+    id: string;
     name: string;
     type: string;
     subjects: any[];
@@ -104,7 +106,7 @@ export interface BackendTimetable {
 
 
 export interface BackendNote {
-    id: number;
+    id: string;
     userId?: string;
     title: string;
     content: string;
@@ -118,7 +120,7 @@ export interface BackendNote {
 }
 
 export interface BackendNotification {
-    id: number;
+    id: string;
     title: string;
     message: string;
     type: string;
@@ -371,9 +373,9 @@ class ApiService {
         semester: string;
         courses: any[];
         updatedAt?: string;
+        isGenerated?: boolean;
     }): Promise<BackendTimetable> {
-        console.log('[ApiService] Saving timetable:', timetableData);
-        
+
         try {
             if (!timetableData.semester) {
                 throw new Error('Semester is required');
@@ -383,26 +385,26 @@ class ApiService {
             }
 
             const payload = {
-                semester: timetableData.semester, 
+                semesterCode: timetableData.semester,
                 courses: timetableData.courses,
                 year: new Date().getFullYear(),
+                updated_at: timetableData.updatedAt || new Date().toISOString(),
+                isGenerated: timetableData.isGenerated || false
             };
 
             const existingTimetable = await this.getTimetableBySemester(timetableData.semester);
-            
+
             let response;
             if (existingTimetable?.id) {
-                // 업데이트
                 console.log('[ApiService] Updating existing timetable');
                 response = await apiClient.put<ApiResponse<BackendTimetable>>(
-                    `/timetable/${existingTimetable.id}`, 
+                    `/timetable/${existingTimetable.id}`,
                     payload
                 );
             } else {
-                // 새로 생성
                 console.log('[ApiService] Creating new timetable');
                 response = await apiClient.post<ApiResponse<BackendTimetable>>(
-                    '/timetable', 
+                    '/timetable',
                     payload
                 );
             }
@@ -480,12 +482,13 @@ class ApiService {
         
         try {
             const currentTimetable = await this.getTimetableBySemester(semester);
+            const currentCourses = currentTimetable?.TimetableSlots?.map(slotToCourse) || [];
             
-            if (!currentTimetable?.courses) {
+            if (currentCourses.length === 0) {
                 throw new Error('No timetable found for semester: ' + semester);
             }
 
-            const updatedCourses = currentTimetable.courses.map((course: any) => 
+            const updatedCourses = currentCourses.map((course: any) => 
                 course.id === courseId 
                     ? { ...course, ...updates }
                     : course
@@ -493,7 +496,9 @@ class ApiService {
 
             return await this.saveTimetable({
                 semester,
-                courses: updatedCourses
+                courses: updatedCourses,
+                updatedAt: new Date().toISOString(),
+                isGenerated: false
             });
         } catch (error) {
             console.error('[ApiService] Failed to update course in timetable:', error);
@@ -595,6 +600,32 @@ class ApiService {
         }
     }
 
+    /**
+     * 시간표 자동 생성
+     */
+    async generateTimetables(curriculumId: number, preferences: any, excludeGenerated: string[] = []): Promise<GeneratedSchedule[]> {
+        try {
+            const response = await apiClient.post<ApiResponse<{
+                timetables: GeneratedSchedule[];
+                total: number;
+                hasMore: boolean;
+            }>>('/timetable/generate', {
+                curriculumId,
+                preferences,
+                excludeGenerated
+            });
+
+            if (!response.data.success) {
+                throw new Error(response.data.message || '시간표 생성 실패');
+            }
+
+            return response.data.data.timetables || [];
+        } catch (error) {
+            console.error('[ApiService] Failed to generate timetables:', error);
+            return [];
+        }
+    }
+    
     // ===== 수강 기록 관리 =====
     async getRecords(): Promise<BackendRecord[]> {
         console.log('[ApiService] Fetching user records');
@@ -618,7 +649,7 @@ class ApiService {
         }
     }
 
-    async updateRecord(id: number, updates: Partial<BackendRecord>): Promise<BackendRecord | null> {
+    async updateRecord(id: string, updates: Partial<BackendRecord>): Promise<BackendRecord | null> {
         console.log('[ApiService] Updating record:', id, updates);
         try {
             const { data: res } = await apiClient.put<ApiResponse<BackendRecord>>(`/records/${id}`, updates);
@@ -629,7 +660,7 @@ class ApiService {
         }
     }
 
-    async deleteRecord(id: number): Promise<boolean> {
+    async deleteRecord(id: string): Promise<boolean> {
         console.log('[ApiService] Deleting record:', id);
         try {
             const { data: res } = await apiClient.delete<ApiResponse<null>>(`/records/${id}`);
@@ -652,7 +683,7 @@ class ApiService {
         }
     }
 
-    async getCurriculumById(id: number): Promise<BackendCurriculum | null> {
+    async getCurriculumById(id: string): Promise<BackendCurriculum | null> {
         console.log('[ApiService] Fetching curriculum by ID:', id);
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendCurriculum>>(`/curriculums/${id}`);
@@ -695,7 +726,7 @@ class ApiService {
         }
     }
 
-    async updateNote(id: number, updates: Partial<BackendNote>): Promise<BackendNote | null> {
+    async updateNote(id: string, updates: Partial<BackendNote>): Promise<BackendNote | null> {
         if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/.test(id)) {
             console.error('[ApiService] invalid id →', id);
             throw new Error('Invalid note id');
@@ -719,7 +750,7 @@ class ApiService {
         }
     }
 
-    async deleteNote(id: number): Promise<boolean> {
+    async deleteNote(id: string): Promise<boolean> {
         console.log('[ApiService] Deleting note:', id);
         // UUID 형식 검증 추가
         if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/.test(id)) {
@@ -780,7 +811,7 @@ class ApiService {
         }
     }
 
-    async markNotificationAsRead(id: number): Promise<boolean> {
+    async markNotificationAsRead(id: string): Promise<boolean> {
         console.log('[ApiService] Marking notification as read:', id);
         try {
             const response = await apiClient.patch<{ success: boolean; message?: string }>(`/notifications/${id}/read`);

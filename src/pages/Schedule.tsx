@@ -110,8 +110,18 @@ const Schedule: React.FC = () => {
 
     const [semesterOptions, setSemesterOptions] = useState<string[]>([]);
     const pinnedSemester = userData?.settings?.pinnedSemester || '';
-    const [semester, setSemester] = useState<string>(pinnedSemester || '');
+    
+    const getCurrentSemester = () => {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const month = now.getMonth() + 1;
+        
+        const currentSem = (month >= 1 && month <= 6) ? 1 : 2;
+        return `${currentYear}-${currentSem}학기`;
+    };
 
+    const [semester, setSemester] = useState<string>(pinnedSemester || getCurrentSemester());
+    
     // 학기 목록 로딩
     useEffect(() => {
         (async () => {
@@ -164,16 +174,31 @@ const Schedule: React.FC = () => {
 
         try {
             const { apiService } = await import('../services/ApiService');
-            
-            // 백엔드가 기대하는 형식으로 데이터 변환
-            const backendCourses = newCourses.map(courseToSlot);
+
+            const backendCourses = newCourses.map(course => ({
+                name: course.name,
+                code_id: course.code ? String(course.code) : null,
+                professor: course.instructor,
+                credits: course.credits,
+                room: course.room,
+                type: course.type,
+                schedule: [
+                    {
+                        day: reverseDayMap[course.day],
+                        startPeriod: course.startPeriod,
+                        endPeriod: course.endPeriod,
+                        start_end: `${course.startTime}~${course.endTime}`
+                    }
+                ]
+            }));
 
             console.log('[DEBUG] 백엔드 전송 데이터:', { semester, courses: backendCourses });
 
             await apiService.saveTimetable({
                 semester,
                 courses: backendCourses,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                isGenerated: false
             });
 
             return true;
@@ -254,7 +279,7 @@ const Schedule: React.FC = () => {
         }
         
         // TimetableGrid에 전달되는 props도 확인
-        console.log('📤 TimetableGrid에 전달할 courses:', timetableSlots);
+        console.log('TimetableGrid에 전달할 courses:', timetableSlots);
     }, [timetableSlots, isLoading, semester]);
 
     // TimetableSlot을 Course로 변환
@@ -281,11 +306,10 @@ const Schedule: React.FC = () => {
     // 과목 저장 함수
     const handleSaveCourse = async (courseData: Partial<Course>) => {
         console.log('[DEBUG] 전송할 데이터:', courseData);
-        
+
         try {
-            // 데이터 검증 및 변환
             const sanitizedCourse: Course = {
-                id: courseData.id || Date.now().toString(),
+                id: courseData.id || Date.now(),
                 name: courseData.name || '새 과목',
                 code: courseData.code || '',
                 instructor: courseData.instructor || '',
@@ -299,11 +323,6 @@ const Schedule: React.FC = () => {
                 room: courseData.room || '',
             };
 
-            // 백엔드 형식으로 변환
-            const backendCourse = courseToSlot(sanitizedCourse);
-            
-            let newCourses: any[];
-
             let currentTimetable;
             try {
                 currentTimetable = await apiService.getTimetableBySemester(semester);
@@ -312,59 +331,124 @@ const Schedule: React.FC = () => {
                 currentTimetable = null;
             }
 
+            const existingCourses = currentTimetable?.TimetableSlots || [];
+            let finalCourses;
+
             if (dialogCourse) {
-                const existingSlots = currentTimetable?.TimetableSlots || [];
-                newCourses = existingSlots.map((slot: any) => {
-                    if (slot.id.toString() === dialogCourse.id) {
-                        return {
-                            ...slot,
-                            courseName: sanitizedCourse.name,
-                            instructor: sanitizedCourse.instructor,
-                            dayOfWeek: reverseDayMap[sanitizedCourse.day],
+                const targetSlot = existingCourses.find(slot => 
+                    slot.id.toString() === dialogCourse.id.toString()
+                );
+                
+                if (!targetSlot) {
+                    throw new Error('수정할 슬롯을 찾을 수 없습니다.');
+                }
+
+                const targetCodeId = targetSlot.codeId;
+                const targetCourseName = targetSlot.courseName;
+                
+                const sameCodeSlots = existingCourses.filter(slot => {
+                    if (targetCodeId && slot.codeId) {
+                        return slot.codeId === targetCodeId;
+                    }
+                    return slot.courseName === targetCourseName && !slot.codeId;
+                });
+
+                const updatedSlots = sameCodeSlots.map(slot => ({
+                    name: sanitizedCourse.name,
+                    code_id: slot.codeId,
+                    professor: sanitizedCourse.instructor,
+                    credits: sanitizedCourse.credits,
+                    room: sanitizedCourse.room || slot.room,
+                    type: sanitizedCourse.type || slot.type,
+                    schedule: [
+                        {
+                            day: reverseDayMap[slot.dayOfWeek as keyof typeof reverseDayMap] || slot.dayOfWeek,
+                            startPeriod: slot.startPeriod,
+                            endPeriod: slot.endPeriod,
+                            start_end: `${slot.startTime}~${slot.endTime}`
+                        }
+                    ]
+                }));
+
+                const otherSlots = existingCourses.filter(slot => {
+                    if (targetCodeId && slot.codeId) {
+                        return slot.codeId !== targetCodeId;
+                    }
+                    return !(slot.courseName === targetCourseName && !slot.codeId);
+                });
+
+                const otherCourses = otherSlots.map(slot => ({
+                    name: slot.courseName,
+                    code_id: slot.codeId,
+                    professor: slot.instructor,
+                    credits: slot.credits,
+                    room: slot.room,
+                    type: slot.type,
+                    color: slot.color,
+                    schedule: [
+                        {
+                            day: reverseDayMap[slot.dayOfWeek as keyof typeof reverseDayMap] || slot.dayOfWeek,
+                            startPeriod: slot.startPeriod,
+                            endPeriod: slot.endPeriod,
+                            start_end: `${slot.startTime}~${slot.endTime}`
+                        }
+                    ]
+                }));
+                
+                finalCourses = [...otherCourses, ...updatedSlots];
+
+            } else {
+                const backendCourse = {
+                    name: sanitizedCourse.name,
+                    code_id: sanitizedCourse.code ? String(sanitizedCourse.code) : null,
+                    professor: sanitizedCourse.instructor,
+                    credits: sanitizedCourse.credits,
+                    room: sanitizedCourse.room,
+                    type: sanitizedCourse.type,
+                    schedule: [
+                        {
+                            day: reverseDayMap[sanitizedCourse.day],
                             startPeriod: sanitizedCourse.startPeriod,
                             endPeriod: sanitizedCourse.endPeriod,
-                            startTime: sanitizedCourse.startTime,
-                            endTime: sanitizedCourse.endTime,
-                            room: sanitizedCourse.room,
-                            credits: sanitizedCourse.credits,
-                            type: sanitizedCourse.type,
-                            color: sanitizedCourse.color
-                        };
-                    }
-                    return slot;
-                });
-            } else {
-                const existingSlots = currentTimetable?.TimetableSlots || [];
-                const newSlot = {
-                    courseName: sanitizedCourse.name,
-                    codeId: null,
-                    instructor: sanitizedCourse.instructor,
-                    dayOfWeek: reverseDayMap[sanitizedCourse.day],
-                    startPeriod: sanitizedCourse.startPeriod,
-                    endPeriod: sanitizedCourse.endPeriod,
-                    startTime: sanitizedCourse.startTime,
-                    endTime: sanitizedCourse.endTime,
-                    room: sanitizedCourse.room,
-                    credits: sanitizedCourse.credits,
-                    type: sanitizedCourse.type,
-                    color: sanitizedCourse.color
+                            start_end: `${sanitizedCourse.startTime}~${sanitizedCourse.endTime}`
+                        }
+                    ]
                 };
-                newCourses = [...existingSlots, newSlot];
+
+                const existingApiCourses = existingCourses.map(slot => ({
+                    name: slot.courseName,
+                    code_id: slot.LectureCode?.code || null,
+                    professor: slot.instructor,
+                    credits: slot.credits,
+                    room: slot.room,
+                    type: slot.type,
+                    color: slot.color,
+                    schedule: [
+                        {
+                            day: reverseDayMap[slot.dayOfWeek as keyof typeof reverseDayMap] || slot.dayOfWeek,
+                            startPeriod: slot.startPeriod,
+                            endPeriod: slot.endPeriod,
+                            start_end: `${slot.startTime}~${slot.endTime}`
+                        }
+                    ]
+                }));
+                
+                finalCourses = [...existingApiCourses, backendCourse];
             }
-            // 백엔드에 저장
+            
             await apiService.saveTimetable({
                 semester,
-                courses: newCourses,
-                updatedAt: new Date().toISOString()
+                courses: finalCourses,
+                updatedAt: new Date().toISOString(),
+                isGenerated: false
             });
 
-            // 최신 데이터로 화면 업데이트
             const updatedTimetable = await apiService.getTimetableBySemester(semester);
             if (updatedTimetable?.TimetableSlots) {
                 const latestCourses = updatedTimetable.TimetableSlots.map(slotToCourse);
                 setLocalCourses(latestCourses);
             }
-            
+
             showSnackbar('과목이 저장되었습니다.', 'success');
             closeDialog();
         } catch (error) {

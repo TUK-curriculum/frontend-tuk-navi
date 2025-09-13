@@ -80,6 +80,41 @@ export interface Schedule {
     customEvents: CustomEvent[];
 }
 
+interface GeneratedLecture {
+  id: number;
+  name: string;
+  code_id: string;
+  code?: string;
+  professor: string;
+  credits: number;
+  room: string;
+  type: string;
+  schedule: {
+    day: string;
+    period: number;
+    start_end: string;
+    startPeriod?: number;
+    endPeriod?: number;
+  }[];
+}
+
+export interface GeneratedSchedule {
+    id?: number; 
+    semesterCode?: string;
+    year: number;
+    lectures: GeneratedLecture[];
+    score?: number;
+    meta?: Record<string, any>;
+    summary?: {
+        total_lectures: number;
+        total_credits: number;
+        occupied_days: string[];
+        team_projects: string[];
+        professors: string[];
+    };
+}
+
+
 export interface Note {
     id: number;
     title: string;

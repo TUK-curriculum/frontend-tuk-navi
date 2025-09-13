@@ -24,7 +24,7 @@ export function slotToCourse(slot: any): Course {
   const lectureCode = slot.LectureCode?.code || slot.codeId?.toString() || "";
 
   return {
-    id: slot.id?.toString() || Date.now().toString(),
+    id: Number(slot.id) || Date.now(),
     name: slot.courseName || "이름 없음",
     code: lectureCode,
     instructor: slot.instructor || "",
