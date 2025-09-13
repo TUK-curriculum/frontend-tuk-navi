@@ -200,9 +200,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('userEmail', email);
 
             const user: User = {
-                id: response.user.userId || Date.now(),
-                userId: response.user.userId || Date.now(),
-                name: response.user.name || response.user.nickname || email,
+                id: response.user.userId || 0,
+                userId: response.user.userId || 0,
+                name: response.user.name || email,
                 email: email,
                 profile: response.user
             };
