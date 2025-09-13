@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import {
-    Box, Card, Typography, Grid, LinearProgress, Chip, Divider, Button, Paper, Avatar, Tooltip, Dialog, DialogContent, Alert, CircularProgress
+    Box, Card, Typography, Grid, LinearProgress, Chip, Divider, Button, Paper, Avatar, Tooltip, Dialog, DialogContent, Alert, CircularProgress,
+    IconButton
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { School, AssignmentTurnedIn, CheckCircle, Warning, Edit, Info, Person, Refresh } from '@mui/icons-material';
 import Graduation from './Graduation';
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../utils/apiClient';
 import { apiService } from '../services/ApiService'; 
+import { professorService } from '@/services/ProfessorService';
+import { PreferredProfessor } from '../types/professor';
+import AccountSettings from './AccountSettings';
 
 interface GraduationStudent {
     id: number;
@@ -47,7 +52,9 @@ export default function Profile() {
     const [error, setError] = useState<string | null>(null);
     const [backendConnected, setBackendConnected] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-
+    const [preferredProfessors, setPreferredProfessors] = useState<PreferredProfessor[]>([]);
+    const [accountOpen, setAccountOpen] = useState(false);
+    
     const loadDataFromBackend = async () => {
         setLoading(true);
         setError(null);
@@ -146,12 +153,26 @@ export default function Profile() {
         }
     };
 
+    const loadPreferredProfessors = async () => {
+        try {
+            const res = await professorService.getPreferredProfessors();
+            setPreferredProfessors(res);
+        } catch (err) {
+            console.error('선호 교수 불러오기 실패:', err);
+        }
+    };
+
     const handleRefresh = () => {
         loadDataFromBackend();
     };
 
     useEffect(() => {
         loadDataFromBackend();
+    }, []);
+
+    useEffect(() => {
+        loadDataFromBackend();
+        loadPreferredProfessors();
     }, []);
 
     const handleProfileImgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,9 +236,16 @@ export default function Profile() {
         <Box maxWidth={900} mx="auto" px={2} py={4}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h4" fontWeight="bold" gutterBottom>
-                    마이페이지 (졸업 현황)
+                    마이  페이지
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2 }}>
+                    <IconButton 
+                        color="primary" 
+                        onClick={() => setAccountOpen(true)}
+                        disabled={loading}
+                    >
+                        <EditIcon />
+                    </IconButton>
                     <Button 
                         variant="outlined" 
                         startIcon={<Refresh />} 
@@ -232,6 +260,15 @@ export default function Profile() {
                     </Button>
                 </Box>
             </Box>
+            <AccountSettings 
+                open={accountOpen} 
+                onClose={() => setAccountOpen(false)} 
+                onSaved={() => {
+                    setAccountOpen(false);
+                    loadDataFromBackend();
+                    loadPreferredProfessors();
+                }}
+            />
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogContent sx={{ p: 0 }}>
@@ -333,6 +370,35 @@ export default function Profile() {
                                 />
                             </Grid>
                         </Grid>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <Card sx={{ p: 3, mb: 2 }}>
+                        <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                            <Person color="primary" />
+                            선호 교수
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.2 }}>
+                            {preferredProfessors.length > 0 ? (
+                                preferredProfessors.map((prof) => (
+                                <Chip
+                                    key={prof.professor_id}
+                                    label={prof.name}
+                                    color="primary"
+                                    variant="outlined"
+                                />
+                            ))
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">
+                                    설정된 선호 교수가 없습니다.
+                                </Typography>
+                            )}
+                        </Box>
                     </Card>
                 </Grid>
 

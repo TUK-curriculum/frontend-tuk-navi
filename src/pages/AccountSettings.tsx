@@ -55,6 +55,7 @@ const availableProfessors = [
 interface AccountSettingsProps {
   open: boolean;
   onClose: () => void;
+  onSaved?: () => void;
 }
 
 interface ProfileForm {
@@ -73,11 +74,11 @@ interface ProfileForm {
   graduationYear: number | null;
 }
 
-const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
+const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose, onSaved }) => {
   const { user } = useAuth();
   const [form, setForm] = useState<ProfileForm>({
     name: '',
-    studentId: '',
+    studentId: 0,
     major: '',
     grade: 1,
     semester: 1,
@@ -107,7 +108,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
       if (profile) {
         setForm({
           name: profile.name || '',
-          studentId: profile.studentId || '',
+          studentId: profile.studentId || 0,
           major: profile.major || '',
           grade: profile.grade || 1,
           semester: profile.semester || 1,
@@ -191,25 +192,26 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ open, onClose }) => {
 
         // 프로필 저장
         await apiService.updateProfile({
-        name: form.name,
-        studentId: form.studentId,
-        major: form.major,
-        grade: form.grade,
-        semester: form.semester,
-        phone: form.phone,
-        completedCredits: form.completedCredits,
-        career: form.career,
-        industry: form.industry,
-        remainingSemesters: form.remainingSemesters,
-        maxCreditsPerTerm: form.maxCreditsPerTerm,
-        enrollmentYear: form.enrollmentYear || undefined,
-        graduationYear: form.graduationYear || undefined
+          name: form.name,
+          studentId: form.studentId,
+          major: form.major,
+          grade: form.grade,
+          semester: form.semester,
+          phone: form.phone,
+          completedCredits: form.completedCredits,
+          career: form.career,
+          industry: form.industry,
+          remainingSemesters: form.remainingSemesters,
+          maxCreditsPerTerm: form.maxCreditsPerTerm,
+          enrollmentYear: form.enrollmentYear || undefined,
+          graduationYear: form.graduationYear || undefined
         });
 
         setSuccess('프로필이 성공적으로 저장되었습니다!');
         setEditMode(false);
         apiService.clearProfileCache();
         setInitialPreferred(selectedProfessors);
+        if (onSaved) onSaved();
     } catch (error: any) {
         console.error('프로필 저장 실패:', error);
         setError(error.message || '저장에 실패했습니다.');
