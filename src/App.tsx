@@ -18,6 +18,8 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -98,9 +100,12 @@ const usePreloadPages = () => {
 
 function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboarding: () => void, onOpenAccountSettings: () => void }) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const { userData } = useData();
+
+  const location = useLocation()
+  const isActive = (path: string) => location.pathname === path;
 
   // 알림/프로필 메뉴 상태
   const [notifAnchor, setNotifAnchor] = useState<null | HTMLElement>(null);
@@ -112,8 +117,8 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
     { id: 3, text: '졸업요건이 변경되었습니다.', read: true },
   ]);
   const unreadCount = notifications.filter(n => !n.read).length;
-  // 더미 유저 데이터 (관리자 여부)
-  const isAdmin = true; // 실제 구현시 권한 체크
+
+  const isAdmin = user?.userId === 6;
 
   const handleNavigation = (path: string) => {
     startTransition(() => {
@@ -137,8 +142,19 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
   };
 
   return (
-    <AppBar position="fixed" sx={{ background: 'rgba(255,255,255,0.95)', color: 'text.primary', boxShadow: '0 2px 16px 0 rgba(0,0,0,0.06)', borderBottom: '1px solid #e5e7eb', backdropFilter: 'blur(8px)' }}>
-      <Toolbar sx={{ justifyContent: 'space-between', px: 4, minHeight: 64 }}>
+    <AppBar 
+      position="fixed" 
+      sx={{ 
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        background: 'rgba(255,255,255,0.95)',
+        color: 'text.primary',
+        boxShadow: '0 2px 16px 0 rgba(0,0,0,0.06)',
+        borderBottom: '1px solid #e5e7eb',
+        backdropFilter: 'blur(8px)',
+        minWidth: '1200px'
+      }}
+    >
+      <Toolbar sx={{ justifyContent: 'space-between', px: 4, minHeight: 64, minWidth: '1200px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, cursor: 'pointer' }} onClick={() => handleNavigation('/dashboard')}>
           <span style={{ fontWeight: 700, fontSize: '1.75rem', color: '#0ea5e9', letterSpacing: '-0.025em' }}>TUK NAVI</span>
         </Box>
@@ -146,13 +162,13 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
           <Button
             startIcon={<DashboardIcon sx={{ fontSize: 20 }} />}
             sx={{
-              color: 'text.primary',
-              fontWeight: 600,
+              color: isActive('/dashboard') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/dashboard') ? 700 : 600,
+              bgcolor: isActive('/dashboard') ? 'primary.50' : 'transparent',
               px: 2,
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out'
             }}
             onClick={() => handleNavigation('/dashboard')}
             disabled={isPending}
@@ -162,13 +178,13 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
           <Button
             startIcon={<SchoolIcon sx={{ fontSize: 20 }} />}
             sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
+              color: isActive('/curriculum') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/curriculum') ? 700 : 600,
+              bgcolor: isActive('/curriculum') ? 'primary.50' : 'transparent',
               px: 2,
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out'
             }}
             onClick={() => handleNavigation('/curriculum')}
             disabled={isPending}
@@ -178,13 +194,13 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
           <Button
             startIcon={<ScheduleIcon sx={{ fontSize: 20 }} />}
             sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
+              color: isActive('/schedule') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/schedule') ? 700 : 600,
+              bgcolor: isActive('/schedule') ? 'primary.50' : 'transparent',
               px: 2,
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out'
             }}
             onClick={() => handleNavigation('/schedule')}
             disabled={isPending}
@@ -194,13 +210,13 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
           <Button
             startIcon={<ChatIcon sx={{ fontSize: 20 }} />}
             sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
+              color: isActive('/chatbot') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/chatbot') ? 700 : 600,
+              bgcolor: isActive('/chatbot') ? 'primary.50' : 'transparent',
               px: 2,
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out'
             }}
             onClick={handleChatbotClick}
             disabled={isPending}
@@ -210,51 +226,55 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
           <Button
             startIcon={<PersonIcon sx={{ fontSize: 20 }} />}
             sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
+              color: isActive('/profile') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/profile') ? 700 : 600,
+              bgcolor: isActive('/profile') ? 'primary.50' : 'transparent',
               px: 2,
               borderRadius: 2,
               '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out'
             }}
             onClick={() => handleNavigation('/profile')}
             disabled={isPending}
           >
             마이페이지
           </Button>
-          <Button
-            startIcon={<PersonIcon sx={{ fontSize: 20 }} />}
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              px: 2,
-              borderRadius: 2,
-              '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
-            }}
-            onClick={() => handleNavigation('/users')}
-            disabled={isPending}
-          >
-            사용자관리
-          </Button>
-          <Button
-            startIcon={<PersonIcon sx={{ fontSize: 20 }} />}
-            sx={{
-              color: 'text.secondary',
-              fontWeight: 600,
-              px: 2,
-              borderRadius: 2,
-              '&:hover': { bgcolor: 'primary.50' },
-              opacity: isPending ? 0.7 : 1,
-              transition: 'opacity 0.2s ease-in-out'
-            }}
-            onClick={() => handleNavigation('/security-test')}
-            disabled={isPending}
-          >
-            보안테스트
-          </Button>
+          {isAdmin && (
+            <Button
+              startIcon={<PersonIcon sx={{ fontSize: 20 }} />}
+              sx={{
+                color: isActive('/users') ? 'text.primary' : 'text.secondary',
+                fontWeight: isActive('/users') ? 700 : 600,
+                bgcolor: isActive('/users') ? 'primary.50' : 'transparent',
+                px: 2,
+                borderRadius: 2,
+                '&:hover': { bgcolor: 'primary.50' },
+                transition: 'all 0.2s ease-in-out'
+              }}
+              onClick={() => handleNavigation('/users')}
+              disabled={isPending}
+            >
+              사용자관리
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              startIcon={<PersonIcon sx={{ fontSize: 20 }} />}
+              sx={{
+                color: isActive('/security-test') ? 'text.primary' : 'text.secondary',
+                fontWeight: isActive('/security-test') ? 700 : 600,
+                bgcolor: isActive('/security-test') ? 'primary.50' : 'transparent',
+                px: 2,
+                borderRadius: 2,
+                '&:hover': { bgcolor: 'primary.50' },
+                transition: 'all 0.2s ease-in-out'
+              }}
+              onClick={() => handleNavigation('/security-test')}
+              disabled={isPending}
+            >
+              보안테스트
+            </Button>
+          )}
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton sx={{ color: 'text.secondary' }} onClick={e => setNotifAnchor(e.currentTarget)}>
@@ -391,6 +411,7 @@ function AppContent() {
     <Box sx={{
       paddingTop: showAppBar ? `${TOPBAR_HEIGHT}px` : 0,
       minHeight: '100vh',
+      minWidth: '1200px',
       background: '#f9fafb',
       transition: 'all 0.3s ease-in-out'
     }}>
@@ -515,15 +536,20 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={lightTheme}>
         <CssBaseline />
-        <NotificationProvider>
-          <AuthProvider>
-            <SeparatedDataProvider>
-              <SetupProvider>
-                <AppContent />
-              </SetupProvider>
-            </SeparatedDataProvider>
-          </AuthProvider>
-        </NotificationProvider>
+        <Box sx={{ 
+          minWidth: '1200px',
+          overflow: 'auto'
+        }}>
+          <NotificationProvider>
+            <AuthProvider>
+              <SeparatedDataProvider>
+                <SetupProvider>
+                  <AppContent />
+                </SetupProvider>
+              </SeparatedDataProvider>
+            </AuthProvider>
+          </NotificationProvider>
+        </Box>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
