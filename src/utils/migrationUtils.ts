@@ -1,6 +1,7 @@
 // src/utils/migrationUtils.ts
 // 기존 통합 데이터를 1대1 분리 구조로 마이그레이션
 
+import { TimetableSlot } from '@/types/separated-user';
 import { UserData as LegacyUserData } from '../types/user';
 import {
     saveUserProfile,
@@ -32,7 +33,7 @@ export const migrateUserDataToSeparatedStructure = (userId: number, legacyData: 
         if (legacyData.profile) {
             saveUserProfile({
                 userId,
-                studentId: legacyData.profile.studentId || '',
+                studentId: legacyData.profile.studentId || Date.now(),
                 major: legacyData.profile.major || '',
                 grade: legacyData.profile.grade || 1,
                 semester: legacyData.profile.semester || 1,
@@ -81,7 +82,7 @@ export const migrateUserDataToSeparatedStructure = (userId: number, legacyData: 
             saveSchedule({
                 userId,
                 currentSemester: legacyData.schedule.currentSemester || '',
-                timetable: legacyData.schedule.timetable || [],
+                timetable: (legacyData.schedule.timetable || []) as TimetableSlot[],
                 customEvents: legacyData.schedule.customEvents || [],
                 updatedAt: new Date().toISOString()
             });
@@ -203,7 +204,7 @@ export const migrateAllLegacyData = (): boolean => {
                 !key.includes('_graduationRequirements') && !key.includes('_favorites') &&
                 !key.includes('_recentSearches')) {
 
-                const userId = key.replace('user_', '');
+                const userId = parseInt(key.replace('user_', ''), 10);
                 const dataStr = localStorage.getItem(key);
 
                 if (dataStr) {
@@ -228,7 +229,7 @@ export const migrateAllLegacyData = (): boolean => {
 
         // 현재 사용자 설정 유지
         if (currentUser) {
-            setCurrentUserId(currentUser);
+            setCurrentUserId(Number(currentUser));
         }
 
         console.log(`마이그레이션 완료: ${migratedCount}명의 사용자 데이터 처리`);

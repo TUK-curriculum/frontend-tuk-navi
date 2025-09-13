@@ -264,12 +264,12 @@ const CurriculumDetailModal: React.FC<CurriculumDetailModalProps> = ({
                                                                     </Typography>
                                                                     <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
                                                                         <Chip
-                                                                            label={getDayOfWeekLabel(lecture.dayOfWeek)}
+                                                                            label={getDayOfWeekLabel(lecture.dayOfWeek ?? '')}
                                                                             size="small"
                                                                             variant="outlined"
                                                                         />
                                                                         <Chip
-                                                                            label={`${formatTime(lecture.startTime)} - ${formatTime(lecture.endTime)}`}
+                                                                            label={`${formatTime(lecture.startTime ?? '')} - ${formatTime(lecture.endTime ?? '')}`}
                                                                             size="small"
                                                                             variant="outlined"
                                                                             icon={<Schedule fontSize="small" />}

@@ -1,5 +1,3 @@
-import { getUserInfo } from './userStorage';
-
 // 인증 상태 확인
 export const checkAuthStatus = (): boolean => {
     console.warn('checkAuthStatus는 더 이상 사용되지 않습니다. useAuth를 사용하세요.');

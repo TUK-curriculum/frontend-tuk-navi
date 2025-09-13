@@ -17,6 +17,9 @@ export interface CourseCore {
     starred?: boolean;
     selected?: boolean;
     color?: string;
+
+    year?: number;
+    semester?: number;
 }
 
 export interface Course extends CourseCore {

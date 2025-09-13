@@ -59,7 +59,7 @@ export default function Profile() {
 
             if (profileData) {
                 setStudent({
-                    id: profileData.studentId || '',
+                    id: profileData.studentId || Date.now(),
                     name: profileData.name || '정보 없음',
                     dept: profileData.major || '',
                     curriculumYear: profileData.grade || 1

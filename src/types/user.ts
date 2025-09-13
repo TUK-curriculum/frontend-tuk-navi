@@ -2,9 +2,10 @@
 // 사용자별 데이터 관리를 위한 통합 타입 시스템
 
 export interface UserProfile {
-    name: number;
+    userId: number;
+    name: string;
     email: string;
-    studentId: string;
+    studentId: number;
     major: string;
     grade: number;
     semester: number;
@@ -51,7 +52,7 @@ export interface Subject {
 
 export interface TimetableSlot {
     id: number;
-    subjectId: string;
+    subjectId: number;
     subjectName: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
     startPeriod: number;
@@ -83,7 +84,7 @@ export interface Schedule {
 interface GeneratedLecture {
   id: number;
   name: string;
-  code_id: string;
+  code_id: number;
   code?: string;
   professor: string;
   credits: number;
@@ -135,7 +136,7 @@ export interface ChatMessage {
     timestamp: string;
     type?: 'text' | 'image' | 'file';
     metadata?: {
-        courseId?: string;
+        courseId?: number;
         graduationInfo?: boolean;
         curriculumSuggestion?: boolean;
     };

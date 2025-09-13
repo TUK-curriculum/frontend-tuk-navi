@@ -8,7 +8,6 @@ import {
     Course,
     computerEngineeringRequirements
 } from '../data/graduationRequirements';
-import { Mascot } from '../components/common/Mascot';
 import setup1 from '../assets/setup1.png';
 import setup2 from '../assets/setup2.png';
 import setup3 from '../assets/setup3.png';
@@ -80,7 +79,7 @@ const CourseSetup: React.FC<CourseSetupProps> = ({
     const handleAddCourse = () => {
         if (newCourse.name.trim()) {
             const course: Course = {
-                id: `CUSTOM_${Date.now()}`,
+                id: Date.now(),
                 name: newCourse.name,
                 credits: newCourse.credits,
                 category: newCourse.category,

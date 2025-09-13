@@ -194,7 +194,7 @@ export class CourseService {
   /**
    * 수강 취소
    */
-  async dropCourse(courseId: string, studentId: string): Promise<void> {
+  async dropCourse(courseId: number, studentId: number): Promise<void> {
     // Check if course exists
     await this.getCourseById(courseId);
 
@@ -212,7 +212,7 @@ export class CourseService {
   /**
    * 이수 완료 과목 조회
    */
-  async getCompletedCourses(studentId: string): Promise<Course[]> {
+  async getCompletedCourses(studentId: number): Promise<Course[]> {
     try {
       return await courseRepository.getCompletedCourses(studentId);
     } catch (error) {
@@ -273,9 +273,9 @@ export class CourseService {
    * 추천 강의 조회
    */
   async getRecommendedCourses(
-    studentId: string,
+    studentId: number,
     major: string,
-    completedCourseIds: string[]
+    completedCourseIds: number[]
   ): Promise<Course[]> {
     try {
       // Get all courses for the major
@@ -288,8 +288,12 @@ export class CourseService {
 
       // Sort by type (required first) and credits
       return availableCourses.sort((a, b) => {
-        if (a.type === 'required' && b.type !== 'required') return -1;
-        if (a.type !== 'required' && b.type === 'required') return 1;
+        const isARequired = a.type === 'MR' || a.type === 'GR';
+        const isBRequired = b.type === 'MR' || b.type === 'GR';
+
+        if (isARequired && !isBRequired) return -1;
+        if (!isARequired && isBRequired) return 1;
+        
         return b.credits - a.credits;
       }).slice(0, 10);
     } catch (error) {

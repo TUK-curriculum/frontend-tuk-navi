@@ -290,7 +290,7 @@ const Schedule: React.FC = () => {
     const { open: openDetailDialog, data: detailCourse, openDialog: showDetail, closeDialog: closeDetail } = useDialog<Course>();
     const { open: openExcelModal, data: imageCourse, openDialog: showExcelModal, closeDialog: closeExcelModal } = useDialog<Course>();
     const location = useLocation();
-    const [highlightCourseId, setHighlightCourseId] = useState<string | null>(null);
+    const [highlightCourseId, setHighlightCourseId] = useState<number | null>(null);
 
     // 추가 버튼 메뉴 상태
     const [addMenuAnchor, setAddMenuAnchor] = useState<null | HTMLElement>(null);

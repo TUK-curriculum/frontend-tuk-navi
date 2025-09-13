@@ -67,7 +67,7 @@ import SortableMemoItem from '../SortableMemoItem';
 
 // 타입 정의
 interface Folder {
-    id: number;
+    id: string;
     name: string;
     color: string;
     icon: string;
@@ -129,15 +129,15 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     // 메모 데이터를 Note[]에서 Memo[]로 변환
     const memos = notes.map(note => ({
         id: note.id,
-        userId: note.userId,
+        userId: (note.userId ?? 0) as number,
         title: note.title,
         content: note.content,
-        category: note.category,
+        category: note.category ?? 'all',
         tags: note.tags || [],
-        pinned: note.pinned || false,
-        archived: note.archived || false,
-        order: note.order,
-        date: note.createdAt,
+        pinned: note.isPinned || false,
+        archived: note.isArchived || false,
+        order: note.order ?? 0,
+        date: note.createdAt ?? new Date().toISOString(),
         folderId: note.category || 'all',
         lastModified: note.updatedAt ? new Date(note.updatedAt) : new Date(),
     }));
@@ -148,7 +148,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#60a5fa');
     const [newFolderIcon, setNewFolderIcon] = useState('📁');
-    const [selectedId, setSelectedId] = useState<string | null>(memos[0]?.id || null);
+    const [selectedId, setSelectedId] = useState<number | null>(memos[0]?.id || null);
     const [selectedFolder, setSelectedFolder] = useState<string>('all');
     const [editTitle, setEditTitle] = useState('');
     const [editContent, setEditContent] = useState('');
@@ -424,8 +424,8 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
     };
     const handleUseTemplate = (template: typeof memoTemplates[0]) => {
         const newMemo: Memo = {
-            id: '',
-            userId: user?.userId || '',
+            id: 0,
+            userId: user?.userId || 0,
             title: template.name,
             content: template.content,
             category: selectedFolder,
@@ -505,7 +505,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         if (e) e.preventDefault();
         if (!selectedId) return;
         try {
-            await updateNote(selectedId.toString(), { title: editTitle, content: editContent });
+            await updateNote(selectedId, { title: editTitle, content: editContent });
             setSaved(true);
             setEditing(false);
             setTimeout(() => setSaved(false), 1200);
@@ -537,8 +537,8 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                 content: '',
                 category: selectedFolder === 'all' ? 'all' : selectedFolder,
                 tags: [],
-                pinned: false,
-                archived: false,
+                isPinned: false,
+                isArchived: false,
                 order: notes.length
             });
             const newNote = await newNoteResult;
@@ -597,7 +597,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         showSnackbar('태그가 업데이트되었습니다.', 'success');
     }, [updateNote, showSnackbar]);
     // 정렬 순서 변경 (order)
-    const handleReorder = useCallback(async (id, newOrder) => {
+    const handleReorder = useCallback(async (id: number, newOrder: number) => {
         await updateNote(id, { order: newOrder });
         showSnackbar('메모 순서가 변경되었습니다.', 'success');
     }, [updateNote, showSnackbar]);
@@ -667,12 +667,12 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
         setAddFolderDialogOpen(false);
     };
     // 폴더 삭제
-    const handleDeleteFolder = (id: number) => {
+    const handleDeleteFolder = (id: string) => {
         setFolders(folders.filter(f => f.id !== id));
         if (selectedFolder === id) setSelectedFolder('all');
     };
     // 폴더 이름변경
-    const handleEditFolder = (id: number, name: string) => {
+    const handleEditFolder = (id: string, name: string) => {
         setFolders(folders.map(f => f.id === id ? { ...f, name } : f));
         setEditingFolderId(null);
     };
@@ -832,7 +832,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                         </Tooltip>
                         <Tooltip title="메모 공유">
                             <IconButton
-                                onClick={() => selectedMemo && handleShareMemo(selectedMemo)}
+                                onClick={() => selectedMemo && handleShareMemo(selectedMemo as Memo)}
                                 size="small"
                                 sx={{ color: 'text.secondary' }}
                                 disabled={!selectedMemo}
@@ -842,7 +842,7 @@ const MemoApp: React.FC<MemoAppProps> = ({ open, onClose }) => {
                         </Tooltip>
                         <Tooltip title="메모 다운로드">
                             <IconButton
-                                onClick={() => selectedMemo && handleDownload(selectedMemo)}
+                                onClick={() => selectedMemo && handleDownload(selectedMemo as Memo)}
                                 size="small"
                                 sx={{ color: 'text.secondary' }}
                                 disabled={!selectedMemo}

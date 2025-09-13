@@ -16,6 +16,8 @@ interface SortableMemoItemProps {
     onSelect: (id: number) => void;
     onPin: (id: number) => void;
     onDelete: (id: number) => void;
+    onArchive: (id: number) => Promise<void>;
+    onShare: (memo: Memo) => void; 
 }
 
 // HTML 태그 제거 유틸 함수

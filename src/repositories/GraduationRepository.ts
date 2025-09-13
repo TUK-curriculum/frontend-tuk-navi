@@ -21,14 +21,19 @@ export interface GraduationOverview {
 }
 
 class GraduationRepository {
-    getProgress() {
-        return apiClient.get<GraduationPassStatus>(apiEndpoints.graduation.progress);
+    async getProgress(): Promise<GraduationPassStatus> {
+        const response = await apiClient.get<GraduationPassStatus>(apiEndpoints.graduation.progress);
+        return response.data;
     }
-    getRequirements() {
-        return apiClient.get<RequiredMissing>(apiEndpoints.graduation.requirements);
+
+    async getRequirements(): Promise<RequiredMissing> {
+        const response = await apiClient.get<RequiredMissing>(apiEndpoints.graduation.requirements);
+        return response.data;
     }
-    audit() {
-        return apiClient.get<GraduationOverview>(apiEndpoints.graduation.audit);
+
+    async audit(): Promise<GraduationOverview> {
+        const response = await apiClient.get<GraduationOverview>(apiEndpoints.graduation.audit);
+        return response.data;
     }
 }
 

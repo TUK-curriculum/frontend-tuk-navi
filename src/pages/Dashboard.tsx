@@ -183,7 +183,7 @@ const Dashboard: React.FC = () => {
     const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
 
     // 랜덤 커리큘럼 useRef로 관리(불필요한 리렌더링 방지)
-    const randomCurriculumsRef = useRef<string[] | null>(null);
+    const randomCurriculumsRef = useRef<string[]>([]);
     const [randomCurriculums, setRandomCurriculums] = useState<string[]>([]);
 
     useEffect(() => {
@@ -1200,7 +1200,7 @@ const Dashboard: React.FC = () => {
                                                                                 </Typography>
                                                                             </Box>
                                                                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1.5, md: 2 } }}>
-                                                                                {userInfo.interests.map((interest, index) => (
+                                                                                {userInfo.interests.map((interest: string, index: number) => (
                                                                                     <motion.div
                                                                                         key={index}
                                                                                         initial={{ opacity: 0, scale: 0.8 }}

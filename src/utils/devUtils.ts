@@ -196,7 +196,7 @@ function mergePeriods(startP: number, endP: number) {
 // Dummy setupDevTools export for compatibility
 export function setupDevTools() {
     // 개발 환경에서만 개발자 도구 활성화
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.NODE_ENV === 'development') {
         window.TUK_NAVI_DEV = {
             resetData,
             checkStatus: checkUserDataStatus,

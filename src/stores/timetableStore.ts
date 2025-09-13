@@ -11,7 +11,7 @@ interface TimetableState {
     initializeCourses: (timetableCourses: TimetableCourse[]) => void;
     addCourse: (courseData: Partial<Course>) => void;
     updateCourse: (courseData: Partial<Course>) => void;
-    deleteCourse: (courseId: string) => void;
+    deleteCourse: (courseId: number) => void;
 }
 
 // DataContext의 TimetableCourse를 UI에서 사용하는 Course 형태로 변환

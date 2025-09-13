@@ -23,7 +23,7 @@ interface AuthContextType {
         name: string,
         email: string,
         password: string,
-        studentId?: string,
+        studentId?: number,
         major?: string,
         grade?: string | number,
         phone?: string,
@@ -141,22 +141,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                     try {
                         const { userRepository } = await import('../repositories/UserRepository');
                         const profileData = await userRepository.getProfile();
-                        userId = profileData?.userId || '';
+                        userId = profileData?.userId?.toString() ?? '';
                     } catch (e) {
                         // fallback: id를 email로 대체
                         userId = userEmail;
                     }
                     const userWithProfile = {
-                        id: userId,
-                        userId: userId,
+                        id: Number(userId),
+                        userId: Number(userId),
                         name: '사용자',
                         email: userEmail,
                         profile: {
+                            userId: Date.now(),
                             name: '사용자',
-                            studentId: '',
+                            studentId: Date.now(),
                             major: '',
                             grade: 1,
-                            semester: 1
+                            semester: 1,
+                            email: userEmail
                         }
                     };
                     setUser(userWithProfile);
@@ -198,8 +200,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('userEmail', email);
 
             const user: User = {
-                id: response.user.userId || response.user.email || email,
-                userId: response.user.userId || '',
+                id: response.user.userId || Date.now(),
+                userId: response.user.userId || Date.now(),
                 name: response.user.name || response.user.nickname || email,
                 email: email,
                 profile: response.user
@@ -224,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: string,
         email: string,
         password: string,
-        studentId?: string,
+        studentId?: number,
         major?: string,
         grade?: string | number,
         phone?: string,
@@ -246,7 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 name,
                 email,
                 password,
-                studentId: studentId || '',
+                studentId: studentId || Date.now(),
                 major: major || '',
                 grade: gradeNumber,
                 semester: 1,

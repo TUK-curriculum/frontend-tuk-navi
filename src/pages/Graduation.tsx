@@ -39,7 +39,7 @@ type GraduationAction =
 
 const initialState: GraduationState = {
     step: 0,
-    id: '',
+    id: Date.now(),
     name: '',
     dept: '컴퓨터공학부',
     curriculumYear: 2025,
@@ -67,7 +67,7 @@ function reducer(state: GraduationState, action: GraduationAction): GraduationSt
 
 // 입력 검증 함수들
 const validateStudentId = (id: number): boolean => {
-    return /^\d{10}$/.test(id);
+    return /^\d{10}$/.test(String(id));
 };
 
 const validateName = (name: string): boolean => {

@@ -4,23 +4,20 @@ export type ParsedTime =
     | { day: DayKey; start: string; end: string };
 
 // 챗봇에서 내려오는 시간 문자열을 파싱하는 함수
-export function parseChatbotTimeString(timeString: string): { day: DayKey; startPeriod: number; endPeriod: number } | null {
-    // "월 2교시", "13th 20:50~21:40" 등의 형식을 파싱
+export function parseChatbotTimeString(
+    timeString: string
+): { day: DayKey; startPeriod: number; endPeriod: number } | null {
     const parsed = parseTimeString(timeString);
 
     if (parsed && 'startPeriod' in parsed) {
         return parsed;
     }
 
-    // 시간 형식인 경우 교시로 변환
     if (parsed && 'start' in parsed) {
-        const startPeriod = timeToPeriod(parsed.start);
-        const endPeriod = timeToPeriod(parsed.end);
-        return {
-            day: parsed.day,
-            startPeriod,
-            endPeriod
-        };
+        const p = parsed as Extract<ParsedTime, { start: string; end: string }>;
+        const startPeriod = timeToPeriod(p.start);
+        const endPeriod = timeToPeriod(p.end);
+        return { day: p.day, startPeriod, endPeriod };
     }
 
     return null;
@@ -86,10 +83,16 @@ export function parseTimeString(raw: string): ParsedTime | null {
 }
 
 function korDayToKey(kor: string): DayKey {
-    return (
-        { 월: 'monday', 화: 'tuesday', 수: 'wednesday', 목: 'thursday', 금: 'friday' }[kor as '월']
-    );
+    const map: Record<string, DayKey> = {
+        월: 'monday',
+        화: 'tuesday',
+        수: 'wednesday',
+        목: 'thursday',
+        금: 'friday',
+    };
+    return map[kor] ?? 'monday';
 }
+
 function indexToKey(idx: number): DayKey {
     const arr: DayKey[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     return arr[(idx - 1) % 5];

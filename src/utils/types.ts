@@ -1,6 +1,6 @@
 // types.ts
 export interface Folder {
-    id: number;
+    id: string;
     name: string;
     color: string;
     icon: string;

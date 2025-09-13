@@ -1,19 +1,6 @@
-import { BaseRepository } from './BaseRepository';
+import { BaseRepository, PaginatedResponse, QueryOptions } from './BaseRepository';
 import apiClient from '../config/apiClient';
-
-export interface UserProfile {
-    userId: number;
-    name: string;
-    email: string;
-    studentId?: string;
-    major?: string;
-    grade?: number;
-    semester?: number;
-    phone?: string;
-    nickname?: string;
-    interests?: string[];
-    avatar?: string;
-}
+import { UserData, UserProfile, UserSettings } from '../types/user';
 
 export interface UserProfileUpdate {
     username?: string;
@@ -27,7 +14,38 @@ export interface UserProfileResponse {
     data: UserProfile;
 }
 
-class UserRepository extends BaseRepository {
+export interface UserUpdateDTO {
+    name?: string;
+    email?: string;
+    password?: string;
+    studentId?: number;
+    major?: string;
+    grade?: number;
+    semester?: number;
+    phone?: string;
+    nickname?: string;
+    interests?: string[];
+    avatar?: string;
+}
+
+export interface UserCreateDTO {
+    name: string;
+    email: string;
+    password: string;
+    studentId: number;
+    major?: string;
+    grade?: number;
+    semester?: number;
+    phone?: string;
+    nickname?: string;
+    interests?: string[];
+    avatar?: string;
+}
+
+
+class UserRepository extends BaseRepository<UserProfile> {
+    protected endpoint = '/users';
+
     private static instance: UserRepository;
 
     public static getInstance(): UserRepository {
@@ -37,52 +55,64 @@ class UserRepository extends BaseRepository {
         return UserRepository.instance;
     }
 
-    /**
-     * 사용자 프로필 조회
-     */
+    async findAll(options?: QueryOptions): Promise<UserProfile[]> {
+        const queryString = this.buildQueryString(options);
+        const response = await apiClient.get<PaginatedResponse<UserProfile>>(`${this.endpoint}${queryString}`);
+        return response.data.data;
+    }
+
+    async findById(id: number): Promise<UserProfile | null> {
+        try {
+        const response = await apiClient.get<UserProfileResponse>(`${this.endpoint}/${id}`);
+        return response.data.data;
+        } catch {
+        return null;
+        }
+    }
+
+    async create(data: Partial<UserProfile>): Promise<UserProfile> {
+        const response = await apiClient.post<UserProfileResponse>(this.endpoint, data);
+        return response.data.data;
+    }
+
+    async update(id: number, data: Partial<UserProfile>): Promise<UserProfile> {
+        const response = await apiClient.put<UserProfileResponse>(`${this.endpoint}/${id}`, data);
+        return response.data.data;
+    }
+
+    async delete(id: number): Promise<boolean> {
+        await apiClient.delete(`${this.endpoint}/${id}`);
+        return true;
+    }
+
     async getProfile(): Promise<UserProfile> {
-        console.log('[UserRepository] Getting user profile');
-
-        try {
-            const response = await apiClient.get<UserProfileResponse>('/profile');
-            console.log('[UserRepository] Profile fetched successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            console.error('[UserRepository] Failed to fetch profile:', error);
-            throw error;
-        }
+        const response = await apiClient.get<UserProfileResponse>('/profile');
+        return response.data.data;
     }
 
-    /**
-     * 사용자 프로필 수정
-     */
     async updateProfile(updates: UserProfileUpdate): Promise<UserProfile> {
-        console.log('[UserRepository] Updating user profile:', updates);
-
-        try {
-            const response = await apiClient.put<UserProfileResponse>('/profile', updates);
-            console.log('[UserRepository] Profile updated successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            console.error('[UserRepository] Failed to update profile:', error);
-            throw error;
-        }
+        const response = await apiClient.put<UserProfileResponse>('/profile', updates);
+        return response.data.data;
     }
 
-    /**
-     * 사용자 계정 정보 조회 (auth 엔드포인트)
-     */
     async getAccount(): Promise<any> {
-        console.log('[UserRepository] Getting account info');
+        const response = await apiClient.get('/auth/account');
+        return response.data;
+    }
 
-        try {
-            const response = await apiClient.get('/auth/account');
-            console.log('[UserRepository] Account info fetched successfully:', response);
-            return response;
-        } catch (error) {
-            console.error('[UserRepository] Failed to fetch account:', error);
-            throw error;
-        }
+    async findByEmail(email: string): Promise<UserProfile | null> {
+        const queryString = this.buildQueryString({ filter: { email } });
+        const response = await apiClient.get<PaginatedResponse<UserProfile>>(`${this.endpoint}${queryString}`);
+        return response.data.data[0] ?? null;
+    }
+
+    async getUserData(id: number): Promise<UserData> {
+        const response = await apiClient.get<UserData>(`${this.endpoint}/${id}/data`);
+        return response.data;
+    }
+
+    async updateSettings(id: number, settings: Partial<UserSettings>): Promise<void> {
+        await apiClient.put(`${this.endpoint}/${id}/settings`, settings);
     }
 }
 

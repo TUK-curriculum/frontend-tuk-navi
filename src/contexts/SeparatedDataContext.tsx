@@ -63,7 +63,7 @@ import {
     updateLoginStatistics
 } from '../utils/separatedDataManager';
 
-const convertBackendNoteToNote = (backendNote: BackendNote, fallbackUserId: string): Note => ({
+const convertBackendNoteToNote = (backendNote: BackendNote, fallbackUserId: number): Note => ({
     ...backendNote,
     userId: backendNote.userId || fallbackUserId
 });
@@ -108,23 +108,23 @@ interface SeparatedDataContextType {
     graduationRequirements: Subject[];
     addCourse: (course: Subject) => Promise<void>;
     updateCourse: (course: Subject) => Promise<void>;
-    removeCourse: (courseId: string) => Promise<void>;
+    removeCourse: (courseId: number) => Promise<void>;
     addCompletedCourse: (course: Subject) => Promise<void>;
     updateCompletedCourse: (course: Subject) => Promise<void>;
-    removeCompletedCourse: (courseId: string) => Promise<void>;
+    removeCompletedCourse: (courseId: number) => Promise<void>;
     addTimetableCourse: (course: Subject) => Promise<void>;
     updateTimetableCourse: (course: Subject) => Promise<void>;
-    removeTimetableCourse: (courseId: string) => Promise<void>;
-    favorites: string[];
-    addToFavorites: (courseId: string) => void;
-    removeFromFavorites: (courseId: string) => void;
-    isFavorite: (courseId: string) => boolean;
+    removeTimetableCourse: (courseId: number) => Promise<void>;
+    favorites: number[];
+    addToFavorites: (courseId: number) => void;
+    removeFromFavorites: (courseId: number) => void;
+    isFavorite: (courseId: number) => boolean;
     recentSearches: string[];
     addRecentSearch: (searchTerm: string) => void;
     clearRecentSearches: () => void;
     notifications: NotificationItem[];
     addNotification: (notification: Omit<NotificationItem, 'id' | 'userId' | 'timestamp'>) => void;
-    markNotificationAsRead: (notificationId: string) => void;
+    markNotificationAsRead: (notificationId: number) => void;
     clearNotifications: () => void;
     statistics: UserStatistics;
     updateStatistics: (updates: Partial<UserStatistics>) => void;
@@ -143,7 +143,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     currentUserEmail
 }) => {
     const { user } = useAuth();
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
@@ -164,7 +164,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     const [completedCourses, setCompletedCourses] = useState<Subject[]>([]);
     const [timetableCourses, setTimetableCourses] = useState<Subject[]>([]);
     const [graduationRequirements, setGraduationRequirements] = useState<Subject[]>([]);
-    const [favorites, setFavorites] = useState<string[]>([]);
+    const [favorites, setFavorites] = useState<number[]>([]);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
     // 2. notes 불러오기 (항상 백엔드)
@@ -179,7 +179,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 const { apiService } = await import('../services/ApiService');
                 const notesFromApi = await apiService.getNotes();
                 const convertedNotes = notesFromApi.map(note => 
-                    convertBackendNoteToNote(note, currentUserId || user?.email || '')
+                    convertBackendNoteToNote(note, currentUserId || Date.now())
                 );
                 setNotes(convertedNotes);
             } catch (error) {
@@ -200,13 +200,13 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 // 반드시 백엔드에서 getNotes()로 동기화
                 const notesFromApi = await apiService.getNotes();
                 const convertedNotes = notesFromApi.map(note => 
-                    convertBackendNoteToNote(note, currentUserId || user?.email || '')
+                    convertBackendNoteToNote(note, currentUserId || Date.now())
                 );
                 setNotes(convertedNotes);
                 console.log('[addNote] notes after add:', notesFromApi.map(n => ({ id: n.id, title: n.title })));
                 
                 
-                const convertedNewNote = convertBackendNoteToNote(newNote, currentUserId || user?.email || '');
+                const convertedNewNote = convertBackendNoteToNote(newNote, currentUserId || Date.now());
                 return convertedNewNote;
             }
             // 실패 시 notes를 갱신하지 않음
@@ -235,12 +235,12 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 // 최신 notes 동기화
                 const notesFromApi = await apiService.getNotes();
                 const convertedNotes = notesFromApi.map(note => 
-                    convertBackendNoteToNote(note, currentUserId || user?.email || '')
+                    convertBackendNoteToNote(note, currentUserId || Date.now())
                 );
                 setNotes(convertedNotes);
                 console.log('[updateNote] notes after update:', notesFromApi.map(n => ({ id: n.id, title: n.title })));
 
-                const convertedUpdatedNote = convertBackendNoteToNote(updatedNote, currentUserId || user?.email || '');
+                const convertedUpdatedNote = convertBackendNoteToNote(updatedNote, currentUserId || Date.now());
                 return convertedUpdatedNote;
             }
             return null;
@@ -260,7 +260,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 // 최신 notes 동기화
                 const notesFromApi = await apiService.getNotes();
                 const convertedNotes = notesFromApi.map(note => 
-                    convertBackendNoteToNote(note, currentUserId || user?.email || '')
+                    convertBackendNoteToNote(note, currentUserId || Date.now())
                 );
                 setNotes(convertedNotes);
                 console.log('[deleteNote] notes after delete:', notesFromApi.map(n => ({ id: n.id, title: n.title })));
@@ -287,9 +287,10 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 console.log(`사용자 ${currentUserEmail}의 분리된 데이터 로드 시작`);
 
                 // 기존 데이터 마이그레이션 확인 및 실행
-                checkAndMigrateLegacyUserData(currentUserEmail);
-
-                setCurrentUserId(currentUserEmail);
+                if (currentUserId !== null) {
+                    checkAndMigrateLegacyUserData(currentUserId);
+                }
+                setCurrentUserId(currentUserId);
 
                 // 백엔드 API로부터 데이터 로드
                 const { apiService } = await import('../services/ApiService');
@@ -306,9 +307,9 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                         apiService.getRecords()
                     ]);
 
-                    userProfile = profileResult.status === 'fulfilled' ? profileResult.value : getUserProfile(currentUserEmail);
-                    userNotes = notesResult.status === 'fulfilled' ? notesResult.value : getNotes(currentUserEmail);
-                    userNotifications = notificationsResult.status === 'fulfilled' ? notificationsResult.value : getNotifications(currentUserEmail);
+                    userProfile = profileResult.status === 'fulfilled' ? profileResult.value : getUserProfile(currentUserId ?? 0);
+                    userNotes = notesResult.status === 'fulfilled' ? notesResult.value : getNotes(currentUserId ?? 0);
+                    userNotifications = notificationsResult.status === 'fulfilled' ? notificationsResult.value : getNotifications(currentUserId ?? 0);
                     userTimetable = timetableResult.status === 'fulfilled' ? timetableResult.value : null;
                     userRecords = recordsResult.status === 'fulfilled' ? recordsResult.value : [];
 
@@ -317,25 +318,25 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                     console.warn('[SeparatedDataContext] Backend data loading failed, falling back to localStorage:', backendError);
 
                     // 백엔드 실패 시 localStorage fallback
-                    userProfile = getUserProfile(currentUserEmail);
-                    userNotes = getNotes(currentUserEmail);
-                    userNotifications = getNotifications(currentUserEmail);
+                    userProfile = getUserProfile(currentUserId ?? 0);
+                    userNotes = getNotes(currentUserId ?? 0);
+                    userNotifications = getNotifications(currentUserId ?? 0);
                 }
 
                 // 나머지는 localStorage에서 로드 (점진적 이관)
-                const userGraduationInfo = getGraduationInfo(currentUserEmail);
-                const userCurriculum = getCurriculum(currentUserEmail);
-                const userSchedule = getSchedule(currentUserEmail);
-                const userOnboarding = getOnboarding(currentUserEmail);
-                const userSettings = getUserSettings(currentUserEmail);
-                const userStatistics = getUserStatistics(currentUserEmail);
-                const userMessages = getMessages(currentUserEmail);
-                const userCourses = getCourses(currentUserEmail);
-                const userCompletedCourses = getCompletedCourses(currentUserEmail);
-                const userTimetableCourses = getTimetableCourses(currentUserEmail);
-                const userGraduationRequirements = getGraduationRequirements(currentUserEmail);
-                const userFavorites = getFavorites(currentUserEmail);
-                const userRecentSearches = getRecentSearches(currentUserEmail);
+                const userGraduationInfo = getGraduationInfo(currentUserId ?? 0);
+                const userCurriculum = getCurriculum(currentUserId ?? 0);
+                const userSchedule = getSchedule(currentUserId ?? 0);
+                const userOnboarding = getOnboarding(currentUserId ?? 0);
+                const userSettings = getUserSettings(currentUserId ?? 0);
+                const userStatistics = getUserStatistics(currentUserId ?? 0);
+                const userMessages = getMessages(currentUserId ?? 0);
+                const userCourses = getCourses(currentUserId ?? 0);
+                const userCompletedCourses = getCompletedCourses(currentUserId ?? 0);
+                const userTimetableCourses = getTimetableCourses(currentUserId ?? 0);
+                const userGraduationRequirements = getGraduationRequirements(currentUserId ?? 0);
+                const userFavorites = getFavorites(currentUserId ?? 0);
+                const userRecentSearches = getRecentSearches(currentUserId ?? 0);
 
                 // 상태 업데이트
                 setProfile(userProfile as UserProfile | null);
@@ -356,7 +357,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
                 setRecentSearches(userRecentSearches);
 
                 // 로그인 통계 업데이트
-                updateLoginStatistics(currentUserEmail);
+                updateLoginStatistics(currentUserId ?? 0);
 
                 console.log(`사용자 ${currentUserEmail}의 분리된 데이터 로드 완료`);
                 setError(null);
@@ -481,7 +482,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
 
 
     const defaultSchedule: Schedule = schedule || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         currentSemester: '',
         timetable: [],
         customEvents: [],
@@ -539,7 +540,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         console.log('[handleUpdateSchedule] 입력 데이터:', scheduleUpdate);
         
         const updatedSchedule = { 
-            userId: user?.email || '',
+            userId: user?.id ?? 0,
             currentSemester: scheduleUpdate.currentSemester || '',
             timetable: scheduleUpdate.timetable || [],
             customEvents: scheduleUpdate.customEvents || [],
@@ -606,7 +607,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         setNotifications(prev => [newNotification, ...prev].slice(0, 50));
     }, [currentUserId]);
 
-    const handleMarkNotificationAsRead = useCallback((notificationId: string) => {
+    const handleMarkNotificationAsRead = useCallback((notificationId: number) => {
         if (!currentUserId) return;
         const success = markNotificationAsReadInStorage(currentUserId, notificationId);
         if (success) {
@@ -621,7 +622,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     }, [currentUserId]);
 
     // 즐겨찾기 관리
-    const handleAddToFavorites = useCallback((courseId: string) => {
+    const handleAddToFavorites = useCallback((courseId: number) => {
         if (!currentUserId) return;
         addToFavoritesInStorage(currentUserId, courseId);
         setFavorites(prev => [...prev, courseId]);
@@ -633,7 +634,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         });
     }, [currentUserId, favorites.length]);
 
-    const handleRemoveFromFavorites = useCallback((courseId: string) => {
+    const handleRemoveFromFavorites = useCallback((courseId: number) => {
         if (!currentUserId) return;
         removeFromFavoritesInStorage(currentUserId, courseId);
         setFavorites(prev => prev.filter(id => id !== courseId));
@@ -645,7 +646,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         });
     }, [currentUserId, favorites.length]);
 
-    const isFavorite = useCallback((courseId: string) => {
+    const isFavorite = useCallback((courseId: number) => {
         return favorites.includes(courseId);
     }, [favorites]);
 
@@ -679,7 +680,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         setCourses(updated);
     }, [currentUserId, courses]);
 
-    const handleRemoveCourse = useCallback(async (courseId: string) => {
+    const handleRemoveCourse = useCallback(async (courseId: number) => {
         if (!currentUserId) return;
         const updated = courses.filter(c => c.id !== courseId);
         saveCourses(currentUserId, updated);
@@ -700,7 +701,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         setCompletedCourses(updated);
     }, [currentUserId, completedCourses]);
 
-    const handleRemoveCompletedCourse = useCallback(async (courseId: string) => {
+    const handleRemoveCompletedCourse = useCallback(async (courseId: number) => {
         if (!currentUserId) return;
         const updated = completedCourses.filter(c => c.id !== courseId);
         saveCompletedCourses(currentUserId, updated);
@@ -721,7 +722,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
         setTimetableCourses(updated);
     }, [currentUserId, timetableCourses]);
 
-    const handleRemoveTimetableCourse = useCallback(async (courseId: string) => {
+    const handleRemoveTimetableCourse = useCallback(async (courseId: number) => {
         if (!currentUserId) return;
         const updated = timetableCourses.filter(c => c.id !== courseId);
         saveTimetableCourses(currentUserId, updated);
@@ -793,8 +794,8 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
 
     // 기본값들 (로딩 중이거나 데이터가 없을 때 사용)
     const defaultProfile: UserProfile = profile || {
-        userId: currentUserId || '',
-        studentId: '',
+        userId: currentUserId ?? 0,
+        studentId: 0,
         major: '',
         grade: 1,
         semester: 1,
@@ -802,7 +803,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     };
 
     const defaultGraduationInfo: GraduationInfo = graduationInfo || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         totalCredits: 0,
         majorRequired: 0,
         majorElective: 0,
@@ -815,7 +816,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     };
 
     const defaultCurriculum: Curriculum = curriculum || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         type: '',
         subjects: [],
         completedSubjects: [],
@@ -824,7 +825,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     };
 
     const defaultOnboarding: Onboarding = onboarding || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         isCompleted: false,
         currentStep: 0,
         completedSteps: [],
@@ -833,7 +834,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     };
 
     const defaultSettings: UserSettings = settings || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         theme: 'light',
         notifications: true,
         autoSave: true,
@@ -848,7 +849,7 @@ export const SeparatedDataProvider: React.FC<SeparatedDataProviderProps> = ({
     };
 
     const defaultStatistics: UserStatistics = statistics || {
-        userId: currentUserId || '',
+        userId: currentUserId ?? 0,
         totalLoginCount: 0,
         lastLoginDate: new Date().toISOString(),
         totalStudyTime: 0,
@@ -993,7 +994,7 @@ const mapBackendToCourse = (slot: any): Course => {
     const convertedDay = convertDayOfWeek(slot.dayOfWeek);
     
     const result: Course = {
-        id: slot.id?.toString() || `temp-${Math.random()}`,
+        id: Number(slot.id) || 0,
         code: lectureCode,
         name: slot.courseName || '이름없음',
         day: convertedDay,

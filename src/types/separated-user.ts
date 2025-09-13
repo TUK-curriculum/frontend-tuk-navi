@@ -14,7 +14,7 @@ export interface User {
 export interface UserProfile {
     userId: number;
     name?: string;
-    studentId: string | undefined;
+    studentId: number | undefined;
     major: string;
     grade: number;
     semester: number;
@@ -70,7 +70,7 @@ export interface Subject {
 export interface Schedule {
     userId: number; // User.id 참조
     currentSemester: string;
-    timetable: Course[];
+    timetable: TimetableSlot[];
     customEvents: CustomEvent[];
     updatedAt: string;
 }
@@ -78,7 +78,7 @@ export interface Schedule {
 export interface TimetableSlot {
     courseName: string;
     id: number;
-    subjectId: string;
+    subjectId: number;
     subjectName: string;
     day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
     startPeriod: number;
@@ -148,7 +148,7 @@ export interface UserStatistics {
 // 메모 (User와 1:N)
 export interface Note {
     id: number;
-    userId?: string | undefined;
+    userId?: number | undefined;
     title: string;
     content: string;
     category?: string | undefined;
@@ -169,7 +169,7 @@ export interface ChatMessage {
     timestamp: string;
     type?: 'text' | 'image' | 'file';
     metadata?: {
-        courseId?: string;
+        courseId?: number;
         graduationInfo?: boolean;
         curriculumSuggestion?: boolean;
     };
@@ -218,7 +218,7 @@ export const StorageKeys = {
 // 기본값 생성 함수들
 export const createDefaultUserProfile = (userId: number): UserProfile => ({
     userId,
-    studentId: '',
+    studentId: Date.now(),
     major: '',
     grade: 1,
     semester: 1,

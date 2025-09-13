@@ -39,7 +39,7 @@ export interface BackendUser {
     userId: number;
     email: string;
     name: string;
-    studentId?: string;
+    studentId?: number;
     major?: string;
     grade?: number;
     semester?: number;
@@ -54,7 +54,7 @@ export interface BackendProfile {
     userId: number;
     email?: string;
     name: string;
-    studentId?: string;
+    studentId?: number;
     major?: string;
     grade?: number;
     semester?: number;
@@ -74,7 +74,7 @@ export interface BackendProfile {
 }
 
 export interface BackendRecord {
-    id: string;
+    id: number;
     courseName: string;
     courseCode: string;
     credits: number;
@@ -85,7 +85,7 @@ export interface BackendRecord {
 }
 
 export interface BackendCurriculum {
-    id: string;
+    id: number;
     name: string;
     type: string;
     subjects: any[];
@@ -106,8 +106,8 @@ export interface BackendTimetable {
 
 
 export interface BackendNote {
-    id: string;
-    userId?: string;
+    id: number;
+    userId?: number;
     title: string;
     content: string;
     category?: string;
@@ -120,7 +120,7 @@ export interface BackendNote {
 }
 
 export interface BackendNotification {
-    id: string;
+    id: number;
     title: string;
     message: string;
     type: string;
@@ -204,7 +204,7 @@ class ApiService {
     async updateProfile(updates: {
         username?: string;
         name?: string;
-        studentId?: string;
+        studentId?: number;
         major?: string;
         grade?: number;
         semester?: number;
@@ -438,7 +438,7 @@ class ApiService {
     /**
      * 시간표에서 과목 제거
      */
-    async removeCourseFromTimetable(semester: string, courseId: string): Promise<BackendTimetable> {
+    async removeCourseFromTimetable(semester: string, courseId: number): Promise<BackendTimetable> {
         console.log('[ApiService] Removing course from timetable:', courseId);
         
         try {
@@ -465,7 +465,7 @@ class ApiService {
     /**
      * 시간표 과목 수정
      */
-    async updateCourseInTimetable(semester: string, courseId: string, updates: Partial<{
+    async updateCourseInTimetable(semester: string, courseId: number, updates: Partial<{
         name: string;
         code: string;
         instructor: string;
@@ -649,7 +649,7 @@ class ApiService {
         }
     }
 
-    async updateRecord(id: string, updates: Partial<BackendRecord>): Promise<BackendRecord | null> {
+    async updateRecord(id: number, updates: Partial<BackendRecord>): Promise<BackendRecord | null> {
         console.log('[ApiService] Updating record:', id, updates);
         try {
             const { data: res } = await apiClient.put<ApiResponse<BackendRecord>>(`/records/${id}`, updates);
@@ -660,7 +660,7 @@ class ApiService {
         }
     }
 
-    async deleteRecord(id: string): Promise<boolean> {
+    async deleteRecord(id: number): Promise<boolean> {
         console.log('[ApiService] Deleting record:', id);
         try {
             const { data: res } = await apiClient.delete<ApiResponse<null>>(`/records/${id}`);
@@ -683,7 +683,7 @@ class ApiService {
         }
     }
 
-    async getCurriculumById(id: string): Promise<BackendCurriculum | null> {
+    async getCurriculumById(id: number): Promise<BackendCurriculum | null> {
         console.log('[ApiService] Fetching curriculum by ID:', id);
         try {
             const { data: res } = await apiClient.get<ApiResponse<BackendCurriculum>>(`/curriculums/${id}`);
@@ -726,11 +726,7 @@ class ApiService {
         }
     }
 
-    async updateNote(id: string, updates: Partial<BackendNote>): Promise<BackendNote | null> {
-        if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/.test(id)) {
-            console.error('[ApiService] invalid id →', id);
-            throw new Error('Invalid note id');
-        }
+    async updateNote(id: number, updates: Partial<BackendNote>): Promise<BackendNote | null> {
         // 필드명 매핑: pinned → isPinned, archived → isArchived
         const mappedUpdates = {
             ...updates,
@@ -750,13 +746,8 @@ class ApiService {
         }
     }
 
-    async deleteNote(id: string): Promise<boolean> {
+    async deleteNote(id: number): Promise<boolean> {
         console.log('[ApiService] Deleting note:', id);
-        // UUID 형식 검증 추가
-        if (!/^[\da-f]{8}-([\da-f]{4}-){3}[\da-f]{12}$/.test(id)) {
-            console.error(`[ApiService] Invalid note id: ${id}`);
-            throw new Error(`Invalid note id: ${id}`);
-        }
         try {
             const { data: res } = await apiClient.delete<ApiResponse<null>>(`/notes/${encodeURIComponent(id)}`);
             if (!res.success) throw new Error(res.message || 'Failed to delete note');
@@ -811,7 +802,7 @@ class ApiService {
         }
     }
 
-    async markNotificationAsRead(id: string): Promise<boolean> {
+    async markNotificationAsRead(id: number): Promise<boolean> {
         console.log('[ApiService] Marking notification as read:', id);
         try {
             const response = await apiClient.patch<{ success: boolean; message?: string }>(`/notifications/${id}/read`);

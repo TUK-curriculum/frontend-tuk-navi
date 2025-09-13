@@ -59,7 +59,7 @@ interface AccountSettingsProps {
 
 interface ProfileForm {
   name: string;
-  studentId: string;
+  studentId: number;
   major: string;
   grade: number;
   semester: number;

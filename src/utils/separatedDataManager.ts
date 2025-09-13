@@ -33,12 +33,13 @@ export {
 } from './migrationUtils';
 
 // 현재 로그인된 사용자 관리
-export const getCurrentUserId = (): string | null => {
-    return localStorage.getItem(StorageKeys.currentUser());
+export const getCurrentUserId = (): number | null => {
+    const value = localStorage.getItem(StorageKeys.currentUser());
+    return value ? Number(value) : null;
 };
 
 export const setCurrentUserId = (userId: number): void => {
-    localStorage.setItem(StorageKeys.currentUser(), userId);
+    localStorage.setItem(StorageKeys.currentUser(), userId.toString());
 };
 
 export const clearCurrentUserId = (): void => {
@@ -221,7 +222,7 @@ export const addNote = (userId: number, note: Omit<Note, 'id' | 'userId' | 'crea
     const notes = getNotes(userId);
     const newNote: Note = {
         ...note,
-        id: Date.now().toString(),
+        id: Date.now(),
         userId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -235,7 +236,7 @@ export const addNote = (userId: number, note: Omit<Note, 'id' | 'userId' | 'crea
     return newNote;
 };
 
-export const updateNote = (userId: number, noteId: string, updates: Partial<Omit<Note, 'id' | 'userId'>>): Note | null => {
+export const updateNote = (userId: number, noteId: number, updates: Partial<Omit<Note, 'id' | 'userId'>>): Note | null => {
     const notes = getNotes(userId);
     const noteIndex = notes.findIndex(n => n.id === noteId);
     if (noteIndex === -1) return null;
@@ -248,7 +249,7 @@ export const updateNote = (userId: number, noteId: string, updates: Partial<Omit
     return updatedNote;
 };
 
-export const deleteNote = (userId: number, noteId: string): boolean => {
+export const deleteNote = (userId: number, noteId: number): boolean => {
     const notes = getNotes(userId);
     const filteredNotes = notes.filter(n => n.id !== noteId);
     if (filteredNotes.length === notes.length) return false;
@@ -276,7 +277,7 @@ export const addMessage = (userId: number, message: Omit<ChatMessage, 'id' | 'us
     const messages = getMessages(userId);
     const newMessage: ChatMessage = {
         ...message,
-        id: Date.now().toString(),
+        id: Date.now(),
         userId,
         timestamp: new Date().toISOString()
     };
@@ -309,7 +310,7 @@ export const addNotification = (userId: number, notification: Omit<NotificationI
     const notifications = getNotifications(userId);
     const newNotification: NotificationItem = {
         ...notification,
-        id: Date.now().toString(),
+        id: Date.now(),
         userId,
         timestamp: new Date().toISOString(),
         isRead: false
@@ -320,7 +321,7 @@ export const addNotification = (userId: number, notification: Omit<NotificationI
     return newNotification;
 };
 
-export const markNotificationAsRead = (userId: number, notificationId: string): boolean => {
+export const markNotificationAsRead = (userId: number, notificationId: number): boolean => {
     const notifications = getNotifications(userId);
     const notificationIndex = notifications.findIndex(n => n.id === notificationId);
     if (notificationIndex === -1) return false;
@@ -380,12 +381,12 @@ export const saveGraduationRequirements = (userId: number, courses: Subject[]): 
     saveEntity(key, courses);
 };
 
-export const getFavorites = (userId: number): string[] => {
+export const getFavorites = (userId: number): number[] => {
     const key = StorageKeys.favorites(userId);
     return loadEntity(key, []);
 };
 
-export const saveFavorites = (userId: number, favorites: string[]): void => {
+export const saveFavorites = (userId: number, favorites: number[]): void => {
     const key = StorageKeys.favorites(userId);
     saveEntity(key, favorites);
 
@@ -393,7 +394,7 @@ export const saveFavorites = (userId: number, favorites: string[]): void => {
     updateUserStatistics(userId, { favoriteCoursesCount: favorites.length });
 };
 
-export const addToFavorites = (userId: number, courseId: string): void => {
+export const addToFavorites = (userId: number, courseId: number): void => {
     const favorites = getFavorites(userId);
     if (!favorites.includes(courseId)) {
         const updatedFavorites = [...favorites, courseId];
@@ -401,7 +402,7 @@ export const addToFavorites = (userId: number, courseId: string): void => {
     }
 };
 
-export const removeFromFavorites = (userId: number, courseId: string): void => {
+export const removeFromFavorites = (userId: number, courseId: number): void => {
     const favorites = getFavorites(userId);
     const updatedFavorites = favorites.filter(id => id !== courseId);
     saveFavorites(userId, updatedFavorites);

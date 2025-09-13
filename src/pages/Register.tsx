@@ -490,7 +490,7 @@ const Register: React.FC = () => {
                 basicData.name,
                 basicData.email,
                 basicData.password,
-                academicData.studentId,
+                Number(academicData.studentId),
                 academicData.major,
                 academicData.grade,
                 basicData.phone,

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, Card, Grid, Chip, Button, TextField, FormControl, InputLabel, Select, MenuItem, useTheme, IconButton, Tooltip, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Card, Grid, Chip, Button, TextField, FormControl, InputLabel, Select, MenuItem, useTheme, IconButton, Tooltip, CircularProgress, Alert, SelectChangeEvent } from '@mui/material';
 import { AddCircle, Edit, Delete, School } from '@mui/icons-material';
 import GlassCard from '../components/common/GlassCard';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { graduationService } from '../services/GraduationService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Course } from '../types/course';
 import { CourseCreateDTO, CourseUpdateDTO } from '../repositories/CourseRepository';
+import { RequiredMissing } from '@/repositories/GraduationRepository';
 
 const CompletedCourses: React.FC = () => {
     const theme = useTheme();
@@ -15,45 +16,48 @@ const CompletedCourses: React.FC = () => {
     const queryClient = useQueryClient();
 
     const [courseForm, setCourseForm] = useState<Partial<CourseCreateDTO>>({
-        name: '', credits: 3, type: 'required',
+        name: '', credits: 3, type: 'GR',
     });
-    const [editId, setEditId] = useState<string | null>(null);
+    const [editId, setEditId] = useState<number | null>(null);
     const courseTypes = ['전공필수', '전공선택', '교양필수', '교양선택', '계열기초'];
 
     // Query for completed courses
     const { data: completedCourses = [], isLoading: isLoadingCompleted, error: errorCompleted } = useQuery<Course[]>({
         queryKey: ['completedCourses', user?.email],
-        queryFn: () => courseService.getCompletedCourses(user!.email!),
+        queryFn: () => courseService.getCompletedCourses(user!.id!),
         enabled: !!user?.email,
     });
 
     // Query for graduation requirement courses (all selectable courses)
-    const { data: requirementCourses = [], isLoading: isLoadingRequirements, error: errorRequirements } = useQuery<Course[]>({
-        queryKey: ['graduationRequirements'],
-        queryFn: () => graduationService.getRequirements().then(res => res.courses), // Assuming the response has a 'courses' property
-        staleTime: Infinity, // These rarely change
-    });
+    const { data: requirementData, isLoading: isLoadingRequirements, error: errorRequirements } =
+        useQuery<RequiredMissing>({
+            queryKey: ['graduationRequirements'],
+            queryFn: () => graduationService.getRequirements(),
+            staleTime: Infinity,
+    })
+    const requirementCourses = requirementData?.missing ?? [];
 
     // Mutations
     const addMutation = useMutation({
         mutationFn: (newCourse: CourseCreateDTO) => courseService.createCourse(newCourse),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['completedCourses', user?.email] });
-            setCourseForm({ name: '', credits: 3, type: 'required' });
+            setCourseForm({ name: '', credits: 3, type: 'GR' });
         },
     });
 
     const updateMutation = useMutation({
-        mutationFn: (updatedCourse: Course) => courseService.updateCourse(updatedCourse.id, updatedCourse),
+        mutationFn: (updatedCourse: CourseUpdateDTO) =>
+            courseService.updateCourse(updatedCourse.id, updatedCourse),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['completedCourses', user?.email] });
             setEditId(null);
-            setCourseForm({ name: '', credits: 3, type: 'required' });
+            setCourseForm({ name: '', credits: 3, type: 'GR' });
         },
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (courseId: string) => courseService.deleteCourse(courseId),
+        mutationFn: (courseId: number) => courseService.deleteCourse(courseId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['completedCourses', user?.email] });
         },
@@ -61,11 +65,13 @@ const CompletedCourses: React.FC = () => {
 
     // Memoize the yearSemesterMap to avoid re-computation on every render
     const yearSemesterMap = useMemo(() => {
-        const map: { [key: string]: Course[] } = {};
+        const map: { [key: string]: RequiredMissing["missing"] } = {};
         for (let year = 1; year <= 4; year++) {
             for (let sem = 1; sem <= 2; sem++) {
                 const key = `${year}-${sem}`;
-                map[key] = requirementCourses.filter(c => c.year === year && c.semester === sem);
+                map[key] = requirementCourses.filter(
+                    (c) => (c as any).year === year && (c as any).semester === sem
+                );
             }
         }
         return map;
@@ -73,9 +79,9 @@ const CompletedCourses: React.FC = () => {
 
     const handleAddOrEditCourse = () => {
         if (!courseForm.name || !courseForm.credits) return;
-        if (editId) {
-            const payload: CourseUpdateDTO = { ...courseForm };
-            updateMutation.mutate({ ...payload, id: editId } as Course);
+        if (editId !== null) {
+            const payload: CourseUpdateDTO = { ...courseForm, id: editId };
+            updateMutation.mutate(payload)
         } else {
             const payload: CourseCreateDTO = {
                 name: courseForm.name!,
@@ -92,41 +98,87 @@ const CompletedCourses: React.FC = () => {
         }
     };
 
-    const handleAddAllCourses = (coursesToAdd: Course[]) => {
-        const existing = new Set(completedCourses.map(c => c.name + '_' + c.type));
-        const toAdd = coursesToAdd.filter(c => !existing.has(c.name + '_' + c.type));
-        toAdd.forEach(course => addMutation.mutate(course as CourseCreateDTO));
+    const handleAddAllCourses = (coursesToAdd: typeof requirementCourses) => {
+        coursesToAdd.forEach(c => addMutation.mutate(mapRequirementToDTO(c)));
     };
 
-    const handleAddYearSemesterCourses = (year: number, semester: number, allCourses: Course[]) => {
-        const courses = allCourses.filter(c => c.year === year && c.semester === semester);
-        const existing = new Set(completedCourses.map(c => c.name + '_' + c.type));
-        const toAdd = courses.filter(c => !existing.has(c.name + '_' + c.type));
-        toAdd.forEach(course => addMutation.mutate(course as CourseCreateDTO));
-    };
+    const mapRequirementToDTO = (req: { courseCode: string; name: string; category: string }): CourseCreateDTO => ({
+        name: req.name,
+        code: req.courseCode,
+        type: req.category as Course['type'],
+        credits: 3,
+        instructor: '',
+        room: '',
+        day: undefined,
+        startPeriod: undefined,
+        endPeriod: undefined,
+    });
 
+    const handleAddYearSemesterCourses = (year: number, semester: number, allCourses: typeof requirementCourses) => {
+        const courses = allCourses.filter(c => (c as any).year === year && (c as any).semester === semester);
+        const existing = new Set(completedCourses.map(c => c.name + '_' + c.type));
+        const toAdd = courses.filter(c => !existing.has(c.name + '_' + c.category));
+        toAdd.forEach(c => addMutation.mutate(mapRequirementToDTO(c)));
+    };
 
     const handleEditCourse = (course: Course) => {
         setEditId(course.id);
-        setCourseForm(course);
+        setCourseForm({
+            name: course.name,
+            code: course.code,
+            type: course.type,
+            credits: course.credits,
+            instructor: course.instructor,
+            room: course.room,
+            day: course.day,
+            startPeriod: course.startPeriod,
+            endPeriod: course.endPeriod,
+        });
     };
 
-    const handleDeleteCourse = (courseId: string) => {
+    const handleDeleteCourse = (courseId: number) => {
         deleteMutation.mutate(courseId);
     };
 
-    const handleCourseSelect = (e: React.ChangeEvent<{ value: unknown }>) => {
+    const handleTextFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCourseForm(prev => ({
+            ...prev,
+            [name!]: name === 'credits' ? Number(value) : value,
+        }));
+    };
+
+    const handleSelectChange = (e: SelectChangeEvent<string>) => {
+        const { name, value } = e.target;
+        setCourseForm(prev => ({ ...prev, [name!]: value }));
+    };
+
+    const handleCourseSelect = (e: SelectChangeEvent<string>) => {
         const selected = requirementCourses.find(c => c.name === e.target.value);
         if (selected) {
-            setCourseForm({ ...selected });
+            setCourseForm({
+            name: selected.name,
+            code: selected.courseCode,
+            type: selected.category as any, // Course['type']으로 캐스팅
+            credits: 3, // 기본값
+            instructor: '',
+            room: '',
+            day: undefined,
+            startPeriod: undefined,
+            endPeriod: undefined,
+            });
         }
     };
 
-    const handleCourseFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const handleCourseFormChange = (
+        e: React.ChangeEvent<HTMLInputElement> | SelectChangeEvent
+    ) => {
         const { name, value } = e.target;
-        setCourseForm(prev => ({ ...prev, [name!]: name === 'credits' ? Number(value) : value }));
+        setCourseForm(prev => ({
+            ...prev,
+            [name!]: name === 'credits' ? Number(value) : value,
+        }));
     };
-
 
     if (isLoadingCompleted || isLoadingRequirements) return <CircularProgress />;
     if (errorCompleted || errorRequirements) return <Alert severity="error">{(errorCompleted as any)?.message || (errorRequirements as any)?.message}</Alert>;
@@ -164,8 +216,8 @@ const CompletedCourses: React.FC = () => {
                                                     >
                                                         <MenuItem value=""><em>직접 입력</em></MenuItem>
                                                         {(yearSemesterMap[key] || []).map((c, idx) => (
-                                                            <MenuItem key={c.name + '_' + c.type + '_' + idx} value={c.name}>
-                                                                {c.name} ({c.credits}학점, {c.type})
+                                                            <MenuItem key={c.name + '_' + c.category + '_' + idx} value={c.name}>
+                                                                {c.name} (3학점, {c.category})
                                                             </MenuItem>
                                                         ))}
                                                     </Select>
@@ -178,7 +230,7 @@ const CompletedCourses: React.FC = () => {
                                                     name="credits"
                                                     type="number"
                                                     value={courseForm.credits}
-                                                    onChange={handleCourseFormChange}
+                                                    onChange={handleTextFieldChange}
                                                     inputProps={{ min: 1, max: 6 }}
                                                 />
                                             </Grid>
@@ -215,29 +267,37 @@ const CompletedCourses: React.FC = () => {
                                                 <Typography color="text.secondary">아직 등록된 {year}학년 {semester}학기 이수과목이 없습니다.</Typography>
                                             ) : (
                                                 <Grid container spacing={2}>
-                                                    {yearSemesterMap[key]?.map((course, idx) => (
-                                                        <Grid item xs={12} sm={6} md={4} key={course.name + '_' + course.type + '_' + idx}>
-                                                            <Card variant="outlined" sx={{ p: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2, background: '#f8fafc', boxShadow: 1 }}>
-                                                                <Box sx={{ flexGrow: 1 }}>
-                                                                    <Typography fontWeight={700} sx={{ fontSize: 18, color: theme.palette.primary.dark }}>{course.name}</Typography>
-                                                                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                                                                        <Chip label={course.type} color="info" size="small" sx={{ fontWeight: 700 }} />
-                                                                        <Chip label={`${course.credits}학점`} color="success" size="small" />
+                                                    {(yearSemesterMap[key] || []).map((c, idx) => {
+                                                        const dto = mapRequirementToDTO(c);
+
+                                                        return (
+                                                            <Grid item xs={12} sm={6} md={4} key={dto.name + '_' + dto.type + '_' + idx}>
+                                                                <Card variant="outlined" sx={{ p: 2, borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2, background: '#f8fafc', boxShadow: 1 }}>
+                                                                    <Box sx={{ flexGrow: 1 }}>
+                                                                        <Typography fontWeight={700} sx={{ fontSize: 18, color: theme.palette.primary.dark }}>{dto.name}</Typography>
+                                                                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                                                                            <Chip label={dto.type} color="info" size="small" sx={{ fontWeight: 700 }} />
+                                                                            <Chip label={`${dto.credits}학점`} color="success" size="small" />
+                                                                        </Box>
                                                                     </Box>
-                                                                </Box>
-                                                                <Tooltip title="수정">
-                                                                    <IconButton color="info" onClick={() => handleEditCourse(course)}>
-                                                                        <Edit />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="삭제">
-                                                                    <IconButton color="error" onClick={() => handleDeleteCourse(course.id)}>
-                                                                        <Delete />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            </Card>
-                                                        </Grid>
-                                                    ))}
+                                                                    <Tooltip title="수정 (추가된 후만 가능)">
+                                                                        <span>
+                                                                            <IconButton color="info" disabled>
+                                                                                <Edit />
+                                                                            </IconButton>
+                                                                        </span>
+                                                                    </Tooltip>
+                                                                    <Tooltip title="삭제 (추가된 후만 가능)">
+                                                                        <span>
+                                                                            <IconButton color="error" disabled>
+                                                                                <Delete />
+                                                                            </IconButton>
+                                                                        </span>
+                                                                    </Tooltip>
+                                                                </Card>
+                                                            </Grid>
+                                                        );
+                                                    })}
                                                 </Grid>
                                             )}
                                         </Box>

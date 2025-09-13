@@ -6,7 +6,7 @@ import CourseBlock from './CourseBlock';
 interface TimetableGridProps {
     courses: Course[];
     onCourseClick: (course: Course) => void;
-    highlightCourseId?: string | null;
+    highlightCourseId?: number | null;
 }
 
 const TimetableGrid: React.FC<TimetableGridProps> = ({ courses, onCourseClick, highlightCourseId }) => {

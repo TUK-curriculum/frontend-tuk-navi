@@ -14,7 +14,7 @@ const dayNames = {
 };
 
 const CourseDetail: React.FC = () => {
-    const { id } = useParams<{ id: number }>();
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
     if (!id) {

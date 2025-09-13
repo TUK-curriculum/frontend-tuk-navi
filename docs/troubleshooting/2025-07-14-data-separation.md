@@ -79,7 +79,7 @@ localStorage.setItem(`user_${email}`, JSON.stringify(entireUserData));
 export interface SeparatedUserProfile {
   email: string;
   name: string;
-  studentId: string;
+  studentId: number;
   department: string;
   year: number;
 }

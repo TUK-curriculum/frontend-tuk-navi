@@ -2,24 +2,31 @@ import { idxToTime, timeToIdx } from './periods';
 import { CourseCore, Course, DayKey } from '../types/course';
 import { parseTimeString } from './parseTimeString';
 
-export function normalizeCourse(raw: Record<string, unknown>): CourseCore {
-    // 이미 교시 기반이면 그대로
-    if (raw.startPeriod && raw.endPeriod) return raw as CourseCore;
+function isCourseCore(obj: any): obj is CourseCore {
+    return obj && 'startPeriod' in obj && 'endPeriod' in obj && 'name' in obj;
+}
 
-    // "월 3교시",  "13th 20:50~21:40"  같은 문자열 처리
-    const parsed = parseTimeString(raw.time ?? `${raw.startTime}~${raw.endTime}`);
-    const startIdx = parsed?.startIdx ?? timeToIdx(raw.startTime);
-    const endIdx = parsed?.endIdx ?? timeToIdx(raw.endTime);
+export function normalizeCourse(raw: Record<string, unknown>): CourseCore {
+    if (isCourseCore(raw)) {
+        return raw;
+    }
+
+    const r = raw as any;
+    const parsed = parseTimeString(r.time ?? `${r.startTime}~${r.endTime}`);
+    const startIdx = 'startPeriod' in (parsed ?? {}) ? (parsed as any).startPeriod : timeToIdx(r.startTime);
+    const endIdx = 'endPeriod' in (parsed ?? {}) ? (parsed as any).endPeriod : timeToIdx(r.endTime);
 
     return {
-        id: raw.id ?? (typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).slice(2)),
-        name: raw.name,
-        day: parsed?.dayKey ?? raw.day,
+        id: r.id ?? (typeof crypto !== 'undefined' ? crypto.randomUUID() : Math.random().toString(36).slice(2)),
+        name: r.name,
+        day: 'day' in (parsed ?? {}) ? (parsed as any).day : r.day,
         startPeriod: startIdx,
         endPeriod: endIdx,
-        credits: raw.credits ?? 3,
-        room: raw.room ?? '',
-        type: raw.type ?? 'elective',
+        credits: r.credits ?? 3,
+        room: r.room ?? '',
+        type: r.type ?? 'elective',
+        code: r.code ?? '',
+        instructor: r.instructor ?? '',
     };
 }
 

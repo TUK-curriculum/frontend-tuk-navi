@@ -1,10 +1,12 @@
+import { Folder } from "./types";
+
 // constants.ts
 export const DEFAULT_FOLDERS: Folder[] = [
-    { id: 'all', name: '전체', color: '#60a5fa', icon: '📁', memoCount: 0 },
-    { id: 'work', name: '업무', color: '#f59e0b', icon: '💼', memoCount: 0 },
-    { id: 'personal', name: '개인', color: '#10b981', icon: '👤', memoCount: 0 },
-    { id: 'study', name: '학습', color: '#8b5cf6', icon: '📚', memoCount: 0 },
-    { id: 'ideas', name: '아이디어', color: '#ef4444', icon: '💡', memoCount: 0 },
+    { id: 1, name: '전체', color: '#60a5fa', icon: '📁', memoCount: 0 },
+    { id: 2, name: '업무', color: '#f59e0b', icon: '💼', memoCount: 0 },
+    { id: 3, name: '개인', color: '#10b981', icon: '👤', memoCount: 0 },
+    { id: 4, name: '학습', color: '#8b5cf6', icon: '📚', memoCount: 0 },
+    { id: 5, name: '아이디어', color: '#ef4444', icon: '💡', memoCount: 0 },
 ];
 
 export const PANEL_CONFIG = {

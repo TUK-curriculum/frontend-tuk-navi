@@ -68,7 +68,7 @@ interface User {
     createdAt: string;
     profileImage?: string;
     department?: string;
-    studentId?: string;
+    studentId?: number;
 }
 
 interface UserStats {
@@ -107,15 +107,13 @@ const UserManagement: React.FC = () => {
     useEffect(() => {
         if (user) {
             const currentUser: User = {
-                id: user.email,
+                id: user.id,
                 name: user.name,
                 email: user.email,
                 role: 'user' as const,
                 status: 'active' as const,
                 lastLogin: new Date().toISOString(),
                 createdAt: new Date().toISOString(),
-                department: user.major,
-                studentId: user.studentId
             };
             setUsers([currentUser]);
             setFilteredUsers([currentUser]);

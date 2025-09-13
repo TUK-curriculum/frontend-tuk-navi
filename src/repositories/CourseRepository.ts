@@ -5,17 +5,18 @@ import { apiEndpoints } from '../config/environment';
 
 export interface CourseCreateDTO {
     name: string;
-    day: Course['day'];
-    startPeriod: number;
-    endPeriod: number;
+    day?: Course['day'];
+    startPeriod?: number;
+    endPeriod?: number;
     credits: number;
-    room: string;
+    room?: string;
     type: Course['type'];
     code: string;
     instructor: string;
 }
 
 export interface CourseUpdateDTO extends Partial<CourseCreateDTO> {
+    id: number;
     locked?: boolean;
     starred?: boolean;
     selected?: boolean;
@@ -30,8 +31,8 @@ export interface CourseSearchParams {
 }
 
 export interface CourseEnrollmentDTO {
-    courseId: string;
-    studentId: string;
+    courseId: number;
+    studentId: number;
     semester: string;
 }
 
@@ -69,8 +70,14 @@ export class CourseRepository extends BaseRepository<Course> {
         return response.data;
     }
 
-    async delete(id: number): Promise<void> {
-        await apiClient.delete(apiEndpoints.courses.detail(id));
+    async delete(id: number): Promise<boolean> {
+        try {
+            await apiClient.delete(apiEndpoints.courses.detail(id));
+            return true; 
+        } catch (e) {
+            console.error('[CourseRepository] Delete failed:', e);
+            return false;
+        }
     }
 
     // Course-specific methods
@@ -78,17 +85,17 @@ export class CourseRepository extends BaseRepository<Course> {
         await apiClient.post(apiEndpoints.courses.enroll, enrollment);
     }
 
-    async dropCourse(courseId: string, studentId: string): Promise<void> {
+    async dropCourse(courseId: number, studentId: number): Promise<void> {
         await apiClient.post(apiEndpoints.courses.drop, { courseId, studentId });
     }
 
-    async getCompletedCourses(studentId: string): Promise<Course[]> {
+    async getCompletedCourses(studentId: number): Promise<Course[]> {
         const queryString = this.buildQueryString({ filter: { studentId } });
         const response = await apiClient.get<Course[]>(`${apiEndpoints.courses.completed}${queryString}`);
         return response.data;
     }
 
-    async checkConflict(courseId: string, studentId: string): Promise<{
+    async checkConflict(courseId: number, studentId: number): Promise<{
         hasConflict: boolean;
         conflictingCourses?: Course[];
     }> {

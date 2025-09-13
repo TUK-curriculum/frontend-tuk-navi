@@ -277,7 +277,7 @@ const DayPeriodSelector = memo(function DayPeriodSelector({
 // UserInfo interface 복원
 interface UserInfo {
     name: string;
-    studentId: string;
+    studentId: number | '';
     email: string;
     department: string;
     year: string;
@@ -369,18 +369,18 @@ export default function InterestSelection({
                 console.log('[InterestSelection] User profile details:', user?.profile);
 
                 // Register.tsx에서 사용하는 grade 값은 "4학년" 형태이므로 숫자를 문자열로 변환
-                const gradeText = profile.grade ? `${profile.grade}학년` : '';
+                const gradeText = profile?.grade ? `${profile.grade}학년` : '';
 
                 const mappedData = {
-                    name: profile.name || user.name || '',
-                    email: profile.email || user.email || '',
-                    studentId: profile.studentId || (user.profile as any)?.studentId || '',
-                    department: profile.major || (user.profile as any)?.major || '',
+                    name: profile?.name ?? user.name ?? '',
+                    email: profile?.email ?? user.email ?? '',
+                    studentId: profile?.studentId ?? (user.profile as any)?.studentId ?? '',
+                    department: profile?.major ?? (user.profile as any)?.major ?? '',
                     year: gradeText || ((user.profile as any)?.grade ? `${(user.profile as any).grade}학년` : ''),
                 };
 
-                console.log('[InterestSelection] Backend profile studentId:', profile.studentId);
-                console.log('[InterestSelection] Backend profile grade:', profile.grade);
+                console.log('[InterestSelection] Backend profile studentId:', profile?.studentId);
+                console.log('[InterestSelection] Backend profile grade:', profile?.grade);
                 console.log('[InterestSelection] User profile studentId:', (user.profile as any)?.studentId);
                 console.log('[InterestSelection] User profile grade:', (user.profile as any)?.grade);
                 console.log('[InterestSelection] Final mapped data:', mappedData);
@@ -579,8 +579,11 @@ export default function InterestSelection({
                                             <TextField
                                                 label="학번"
                                                 fullWidth
-                                                value={info.studentId}
-                                                onChange={(e) => handleChange('studentId', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                value={info.studentId === '' ? '' : String(info.studentId)}
+                                                onChange={(e) => {
+                                                    const v = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                    handleChange('studentId', v === '' ? '' : Number(v));
+                                                }}
                                                 error={!!errors.studentId}
                                                 helperText={errors.studentId || '회원가입 시 입력한 정보입니다'}
                                                 disabled={true}
@@ -679,19 +682,21 @@ export default function InterestSelection({
                                                     if (!info.career.trim())
                                                         setErrors((p) => ({ ...p, career: '희망 직군을 선택해주세요.' }));
                                                 }}
-                                                PopperProps={{
-                                                    placement: 'bottom-start',
-                                                    modifiers: [
-                                                        {
-                                                            name: 'flip',
-                                                            enabled: true,
-                                                            options: {
-                                                                altBoundary: true,
-                                                                rootBoundary: 'document',
-                                                                padding: 8
+                                                componentsProps={{
+                                                    popper: {
+                                                        placement: 'bottom-start',
+                                                        modifiers: [
+                                                            {
+                                                                name: 'flip',
+                                                                enabled: true,
+                                                                options: {
+                                                                    altBoundary: true,
+                                                                    rootBoundary: 'document',
+                                                                    padding: 8
+                                                                }
                                                             }
-                                                        }
-                                                    ]
+                                                        ]
+                                                    }
                                                 }}
                                                 renderInput={(params) => (
                                                     <TextField
@@ -708,19 +713,21 @@ export default function InterestSelection({
                                                 freeSolo
                                                 value={info.industry}
                                                 onChange={(_, v) => handleChange('industry', v || '')}
-                                                PopperProps={{
-                                                    placement: 'bottom-start',
-                                                    modifiers: [
-                                                        {
-                                                            name: 'flip',
-                                                            enabled: true,
-                                                            options: {
-                                                                altBoundary: true,
-                                                                rootBoundary: 'document',
-                                                                padding: 8
+                                                componentsProps={{
+                                                    popper: {
+                                                        placement: 'bottom-start',
+                                                        modifiers: [
+                                                            {
+                                                                name: 'flip',
+                                                                enabled: true,
+                                                                options: {
+                                                                    altBoundary: true,
+                                                                    rootBoundary: 'document',
+                                                                    padding: 8
+                                                                }
                                                             }
-                                                        }
-                                                    ]
+                                                        ]
+                                                    }
                                                 }}
                                                 renderInput={(params) => (
                                                     <TextField

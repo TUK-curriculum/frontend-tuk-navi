@@ -3,6 +3,8 @@
  * Provides functions for lazy loading, preloading, and optimizing images
  */
 
+import React from "react";
+
 export interface ImageConfig {
     src: string;
     alt: string;

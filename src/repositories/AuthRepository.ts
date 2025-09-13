@@ -11,7 +11,7 @@ export interface RegisterDTO {
     name: string;
     email: string;
     password: string;
-    studentId: string;
+    studentId: number;
     major: string;
     grade: number;
     semester: number;

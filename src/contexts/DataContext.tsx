@@ -5,9 +5,10 @@ import { UserData, UserProfile, GraduationInfo, Curriculum, Schedule, Note, Chat
 const getDefaultUserData = (): UserData => {
     return {
         profile: {
+            userId: 0,
             name: '',
             email: '',
-            studentId: '',
+            studentId: 0,
             major: '',
             grade: 1,
             semester: 1,
@@ -131,19 +132,19 @@ interface IDataProvider {
     getCourses: () => Promise<Subject[]>;
     addCourse: (course: Subject) => Promise<void>;
     updateCourse: (course: Subject) => Promise<void>;
-    removeCourse: (courseId: string) => Promise<void>;
+    removeCourse: (courseId: number) => Promise<void>;
     getCompletedCourses: () => Promise<Subject[]>;
     addCompletedCourse: (course: Subject) => Promise<void>;
     updateCompletedCourse: (course: Subject) => Promise<void>;
-    removeCompletedCourse: (courseId: string) => Promise<void>;
+    removeCompletedCourse: (courseId: number) => Promise<void>;
     getTimetableCourses: () => Promise<Subject[]>;
     addTimetableCourse: (course: Subject) => Promise<void>;
     updateTimetableCourse: (course: Subject) => Promise<void>;
-    removeTimetableCourse: (courseId: string) => Promise<void>;
+    removeTimetableCourse: (courseId: number) => Promise<void>;
     getGraduationRequirements: () => Promise<Subject[]>;
     addGraduationRequirement: (course: Subject) => Promise<void>;
     updateGraduationRequirement: (course: Subject) => Promise<void>;
-    removeGraduationRequirement: (courseId: string) => Promise<void>;
+    removeGraduationRequirement: (courseId: number) => Promise<void>;
 }
 
 // 통합된 DataContext 타입 정의
@@ -201,13 +202,13 @@ interface DataContextType {
     // 과목 관련 메서드들 (기존 호환성)
     addCourse: (course: Subject) => Promise<void>;
     updateCourse: (course: Subject) => Promise<void>;
-    removeCourse: (courseId: string) => Promise<void>;
+    removeCourse: (courseId: number) => Promise<void>;
     addCompletedCourse: (course: Subject) => Promise<void>;
     updateCompletedCourse: (course: Subject) => Promise<void>;
-    removeCompletedCourse: (courseId: string) => Promise<void>;
+    removeCompletedCourse: (courseId: number) => Promise<void>;
     addTimetableCourse: (course: Subject) => Promise<void>;
     updateTimetableCourse: (course: Subject) => Promise<void>;
-    removeTimetableCourse: (courseId: string) => Promise<void>;
+    removeTimetableCourse: (courseId: number) => Promise<void>;
 
     // 새로운 기능들
     favorites: string[];
@@ -221,7 +222,7 @@ interface DataContextType {
 
     notifications: NotificationItem[];
     addNotification: (notification: Omit<NotificationItem, 'id' | 'timestamp'>) => void;
-    markNotificationAsRead: (notificationId: string) => void;
+    markNotificationAsRead: (notificationId: number) => void;
     clearNotifications: () => void;
 
     statistics: UserStatistics;
@@ -333,7 +334,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         if (!userData) return;
         const newNote: Note = {
             ...note,
-            id: Date.now().toString(),
+            id: Date.now(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -374,7 +375,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         if (!userData) return;
         const newMessage: ChatMessage = {
             ...message,
-            id: Date.now().toString(),
+            id: Date.now(),
             timestamp: new Date().toISOString()
         };
         const updatedMessages = [...userData.messages, newMessage];
@@ -472,7 +473,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         // 실제 알림 로직은 로컬 스토리지에 저장
         const newNotification: NotificationItem = {
             ...notification,
-            id: Date.now().toString(),
+            id: Date.now(),
             timestamp: new Date().toISOString()
         };
         const updatedNotifications = [newNotification, ...userData.notifications].slice(0, 50);
@@ -481,7 +482,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('notifications', updatedNotifications);
     }, [userData]);
 
-    const handleMarkNotificationAsRead = useCallback((notificationId: string) => {
+    const handleMarkNotificationAsRead = useCallback((notificationId: number) => {
         if (!userData) return;
         // 실제 알림 읽음 처리는 로컬 스토리지에서 수행
         const updatedNotifications = userData.notifications.map(n =>
@@ -533,7 +534,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('courses', updatedCourses);
     };
 
-    const removeCourse = async (courseId: string) => {
+    const removeCourse = async (courseId: number) => {
         if (!userData) return;
         const updatedCourses = userData.courses.filter(c => c.id !== courseId);
         const updatedData = { ...userData, courses: updatedCourses };
@@ -567,7 +568,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('completedCourses', updatedCourses);
     };
 
-    const removeCompletedCourse = async (courseId: string) => {
+    const removeCompletedCourse = async (courseId: number) => {
         if (!userData) return;
         const updatedCourses = userData.completedCourses.filter(c => c.id !== courseId);
         const updatedData = { ...userData, completedCourses: updatedCourses };
@@ -601,7 +602,7 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
         updateUserField('timetableCourses', updatedCourses);
     };
 
-    const removeTimetableCourse = async (courseId: string) => {
+    const removeTimetableCourse = async (courseId: number) => {
         if (!userData) return;
         const updatedCourses = userData.timetableCourses.filter(c => c.id !== courseId);
         const updatedData = { ...userData, timetableCourses: updatedCourses };
@@ -650,9 +651,10 @@ export const DataProviderComponent: React.FC<DataProviderProps> = ({
 
         // 프로필 관리
         profile: userData?.profile || {
+            userId: 0,
             name: '',
             email: '',
-            studentId: '',
+            studentId: 0,
             major: '',
             grade: 1,
             semester: 1,
