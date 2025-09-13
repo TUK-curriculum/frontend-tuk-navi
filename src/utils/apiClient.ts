@@ -181,7 +181,7 @@ export const apiClient = {
         },
 
         // 학적 기록 수정
-        update: async (recordId: string, updates: Record<string, unknown>) => {
+        update: async (recordId: number, updates: Record<string, unknown>) => {
             const response = await fetch(`${API_BASE_URL}/records/${recordId}`, {
                 method: 'PUT',
                 headers: createHeaders(),
@@ -192,7 +192,7 @@ export const apiClient = {
         },
 
         // 학적 기록 삭제
-        delete: async (recordId: string) => {
+        delete: async (recordId: number) => {
             const response = await fetch(`${API_BASE_URL}/records/${recordId}`, {
                 method: 'DELETE',
                 headers: createHeaders(),
@@ -258,7 +258,7 @@ export const apiClient = {
         },
 
         // 특정 커리큘럼 조회
-        getById: async (curriculumId: string) => {
+        getById: async (curriculumId: number) => {
             const response = await fetch(`${API_BASE_URL}/curriculums/${curriculumId}`, {
                 method: 'GET',
                 headers: createHeaders(),
@@ -279,7 +279,7 @@ export const apiClient = {
         },
 
         // 커리큘럼 삭제
-        delete: async (curriculumId: string) => {
+        delete: async (curriculumId: number) => {
             const response = await fetch(`${API_BASE_URL}/curriculums/${curriculumId}`, {
                 method: 'DELETE',
                 headers: createHeaders(),
@@ -313,7 +313,7 @@ export const apiClient = {
     // 강의 관련 API
     lectures: {
         // 강의 추가
-        addToCurriculum: async (curriculumId: string, lectureData: Record<string, unknown>) => {
+        addToCurriculum: async (curriculumId: number, lectureData: Record<string, unknown>) => {
             const response = await fetch(`${API_BASE_URL}/curriculums/${curriculumId}/lectures`, {
                 method: 'POST',
                 headers: createHeaders(),
@@ -324,7 +324,7 @@ export const apiClient = {
         },
 
         // 강의 수정
-        update: async (curriculumId: string, lectureId: string, lectureData: Record<string, unknown>) => {
+        update: async (curriculumId: number, lectureId: number, lectureData: Record<string, unknown>) => {
             const response = await fetch(`${API_BASE_URL}/curriculums/${curriculumId}/lectures/${lectureId}`, {
                 method: 'PUT',
                 headers: createHeaders(),
@@ -335,7 +335,7 @@ export const apiClient = {
         },
 
         // 강의 삭제
-        delete: async (curriculumId: string, lectureId: string) => {
+        delete: async (curriculumId: number, lectureId: number) => {
             const response = await fetch(`${API_BASE_URL}/curriculums/${curriculumId}/lectures/${lectureId}`, {
                 method: 'DELETE',
                 headers: createHeaders(),
@@ -345,7 +345,7 @@ export const apiClient = {
         },
 
         // 강의 상세 정보 조회
-        getDetails: async (lectureId: string) => {
+        getDetails: async (lectureId: number) => {
             const response = await fetch(`${API_BASE_URL}/lectures/details?lect_id=${lectureId}`, {
                 method: 'GET',
                 headers: createHeaders(),
@@ -355,7 +355,7 @@ export const apiClient = {
         },
 
         // 선후수 과목 조회
-        getPreRequisite: async (lectureId: string) => {
+        getPreRequisite: async (lectureId: number) => {
             const response = await fetch(`${API_BASE_URL}/lectures/pre-requisite?lect_id=${lectureId}`, {
                 method: 'GET',
                 headers: createHeaders(),
@@ -365,18 +365,7 @@ export const apiClient = {
         },
     },
 
-    // 시간표 관련 API
-    timetable: {
-        // 현재 학기 시간표 조회
-        getCurrent: async () => {
-            const response = await fetch(`${API_BASE_URL}/users/timetable/current`, {
-                method: 'GET',
-                headers: createHeaders(),
-            });
 
-            return handleResponse(response);
-        },
-    },
 
     // 챗봇 관련 API
     chatbot: {
