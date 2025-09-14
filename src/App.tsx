@@ -209,6 +209,22 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
             시간표
           </Button>
           <Button
+            startIcon={<SchoolIcon sx={{ fontSize: 20 }} />}
+            sx={{
+              color: isActive('/courses') ? 'text.primary' : 'text.secondary',
+              fontWeight: isActive('/courses') ? 700 : 600,
+              bgcolor: isActive('/courses') ? 'primary.50' : 'transparent',
+              px: 2,
+              borderRadius: 2,
+              '&:hover': { bgcolor: 'primary.50' },
+              transition: 'all 0.2s ease-in-out'
+            }}
+            onClick={() => handleNavigation('/courses')}
+            disabled={isPending}
+          >
+            강의정보
+          </Button>
+          <Button
             startIcon={<ChatIcon sx={{ fontSize: 20 }} />}
             sx={{
               color: isActive('/chatbot') ? 'text.primary' : 'text.secondary',
@@ -483,6 +499,11 @@ function AppContent() {
             <Route path="/setup" element={
               <ProtectedRoute>
                 <InterestSelection />
+              </ProtectedRoute>
+            } />
+            <Route path="/courses" element={
+              <ProtectedRoute>
+                <CourseDetail />
               </ProtectedRoute>
             } />
             <Route path="/setup/academic" element={<Register startStep={1} />} />

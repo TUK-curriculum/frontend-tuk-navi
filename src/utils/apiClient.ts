@@ -419,8 +419,45 @@ export const apiClient = {
         },
     },
 
+    // 강의 정보 관련 API
+    courses: {
+        // 최근 강의 목록 조회
+        getRecent: async (year: number, semester: number, major: string) => {
+            const response = await fetch(
+                `${API_BASE_URL}/courses?year=${year}&semester=${semester}&major=${major}`,
+                {
+                    method: 'GET',
+                    headers: createHeaders(),
+                }
+            );
 
+            return handleResponse(response);
+        },
 
+        // 특정 강의 기본 정보 조회
+        getRecentByCode: async (code: string) => {
+            const response = await fetch(`${API_BASE_URL}/courses/${code}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
+
+        // 특정 강의 S3 강의계획서 조회
+        getSyllabi: async (code: string, semester: string) => {
+            const response = await fetch(
+                `${API_BASE_URL}/courses/${code}/syllabi?semester=${semester}`,
+                {
+                    method: 'GET',
+                    headers: createHeaders(),
+                }
+            );
+
+            return handleResponse(response);
+        },
+    },
+    
     // 챗봇 관련 API
     chatbot: {
         // 메시지 전송
@@ -483,6 +520,71 @@ export const apiClient = {
             });
 
             return handleResponse(response);
+        },
+    },
+
+    // 강의평 관련 API
+    reviews: {
+        // 강의 코드로 리뷰 조회
+        getByCourse: async (courseCode: string) => {
+            const response = await fetch(`${API_BASE_URL}/reviews/${courseCode}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+            return handleResponse(response);
+        },
+
+        // 강의 코드로 리뷰 작성
+        create: async (courseCode: string, formData: FormData) => {
+            const response = await fetch(`${API_BASE_URL}/reviews/${courseCode}`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${getAuthToken()}`,
+                },
+                body: formData,
+            });
+            return handleResponse(response);
+        },
+
+        // 리뷰 ID로 수정
+        update: async (reviewId: number, data: { content?: string; rating?: number }) => {
+            const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+                method: 'PUT',
+                headers: createHeaders(),
+                body: JSON.stringify(data),
+            });
+            return handleResponse(response);
+        },
+
+        // 리뷰 ID로 삭제
+        delete: async (reviewId: number) => {
+            const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+                method: 'DELETE',
+                headers: createHeaders(),
+            });
+            return handleResponse(response);
+        },
+    },
+
+    // 자료실 관련 API
+    resources: {
+        getByCourse: async (courseId: string) => {
+        const response = await fetch(`${API_BASE_URL}/resources/${courseId}`, {
+            method: 'GET',
+            headers: createHeaders(),
+        });
+        return handleResponse(response);
+        },
+
+        create: async (courseId: string, formData: FormData) => {
+        const response = await fetch(`${API_BASE_URL}/resources/${courseId}`, {
+            method: 'POST',
+            headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+            },
+            body: formData,
+        });
+        return handleResponse(response);
         },
     },
 };
