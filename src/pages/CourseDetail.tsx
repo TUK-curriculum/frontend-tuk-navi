@@ -88,7 +88,7 @@ const CourseDetail: React.FC = () => {
 
   // 강의 목록 불러오기
   useEffect(() => {
-    apiClient.courses.getRecent(2025, 1, "CE")
+    apiClient.courses.getFixedRecent("CE")
       .then(res => {
         const arr = res.data;
         setCourses(Array.isArray(arr) ? arr : []);
@@ -99,7 +99,7 @@ const CourseDetail: React.FC = () => {
   // 강의 선택 시 syllabi + 리뷰 + 자료실 가져오기
   useEffect(() => {
     if (selectedCourse) {
-      apiClient.courses.getSyllabi(selectedCourse.code, "1")
+      apiClient.courses.getSyllabi(selectedCourse.code, Number(selectedCourse.semester))
         .then(res => {
           setSyllabi(res.data);
           setProfessorTab(0);

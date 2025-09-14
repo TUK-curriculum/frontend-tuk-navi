@@ -433,6 +433,14 @@ export const apiClient = {
 
             return handleResponse(response);
         },
+        
+        getFixedRecent: async (major: string) => {
+            const response = await fetch(`${API_BASE_URL}/courses?major=${major}`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+            return handleResponse(response);
+        },
 
         // 특정 강의 기본 정보 조회
         getRecentByCode: async (code: string) => {
@@ -445,15 +453,14 @@ export const apiClient = {
         },
 
         // 특정 강의 S3 강의계획서 조회
-        getSyllabi: async (code: string, semester: string) => {
+        getSyllabi: async (code: string, semester: number) => {
             const response = await fetch(
                 `${API_BASE_URL}/courses/${code}/syllabi?semester=${semester}`,
                 {
-                    method: 'GET',
-                    headers: createHeaders(),
+                method: 'GET',
+                headers: createHeaders(),
                 }
             );
-
             return handleResponse(response);
         },
     },
