@@ -11,6 +11,7 @@ interface User {
     userId: number;
     name: string;
     email: string;
+    provider?: string; 
     profile?: UserProfile;
 }
 
@@ -19,6 +20,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
+    loginWithSocial: (user: any, accessToken: string, refreshToken: string) => void;
     register: (
         name: string,
         email: string,
@@ -281,6 +283,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    const loginWithSocial = (userInfo: any, accessToken: string, refreshToken: string) => {
+        console.log('[AuthContext] Social login with:', userInfo);
+
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userEmail');
+
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('userEmail', userInfo.email);
+
+        const user: User = {
+            id: userInfo.userId || 0,
+            userId: userInfo.userId || 0,
+            name: userInfo.name || userInfo.nickname || userInfo.username || userInfo.email,
+            email: userInfo.email,
+            profile: userInfo
+        };
+
+        setUser(user);
+
+        // 프로필 초기화
+        initializeUserDataForAuth(userInfo.email, userInfo);
+    };
+
     const logout = async () => {
         try {
             if (user?.email) {
@@ -323,6 +350,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithSocial,
         register,
         logout,
         completedCourses,

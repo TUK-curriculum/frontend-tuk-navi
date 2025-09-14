@@ -81,6 +81,14 @@ interface SchedulePreferences {
     avoid_professors: string[];
 }
 
+interface Slot {
+    day: string;
+    startPeriod?: number;
+    endPeriod?: number;
+    period?: number;
+    start_end?: string;
+}
+
 const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({
     open,
     onClose,
@@ -419,7 +427,7 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({
                         <TimetableGrid
                             courses={generatedSchedules[selectedTab]?.lectures.flatMap(l => {
                                 // 요일별로 스케줄 그룹화
-                                const scheduleByDay: { [key: string]: typeof l.schedule } = {};
+                                const scheduleByDay: { [key: string]: Slot[] } = {};
                                 l.schedule.forEach(slot => {
                                     if (!scheduleByDay[slot.day]) {
                                         scheduleByDay[slot.day] = [];
@@ -429,25 +437,25 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({
                                 
                                 // 각 요일별로 연속된 교시 합치기
                                 return Object.entries(scheduleByDay).map(([day, slots]) => {
-                                    const parsePeriod = (p: any) => Number(p);
+                                    slots.sort(
+                                        (a: Slot, b: Slot) =>
+                                            (a.startPeriod ?? a.period ?? 0) - (b.startPeriod ?? b.period ?? 0)
+                                    );
 
-                                    // 교시 순서 정렬 → startPeriod 기준
-                                    slots.sort((a, b) => (a.startPeriod ?? a.period) - (b.startPeriod ?? b.period));
-
-                                    const mergedSlots: any[] = [];
-                                    let currentGroup = [slots[0]];
+                                    const mergedSlots: Slot[][] = [];
+                                    let currentGroup: Slot[] = [slots[0]];
 
                                     for (let i = 1; i < slots.length; i++) {
                                         const prev = currentGroup[currentGroup.length - 1];
                                         const curr = slots[i];
-                                        const prevEnd = prev.endPeriod ?? prev.period;
-                                        const currStart = curr.startPeriod ?? curr.period;
+                                        const prevEnd = prev.endPeriod ?? prev.period ?? 0;
+                                        const currStart = curr.startPeriod ?? curr.period ?? 0;
 
                                         if (currStart === prevEnd + 1) {
-                                            currentGroup.push(curr);
+                                        currentGroup.push(curr);
                                         } else {
-                                            mergedSlots.push(currentGroup);
-                                            currentGroup = [curr];
+                                        mergedSlots.push(currentGroup);
+                                        currentGroup = [curr];
                                         }
                                     }
                                     mergedSlots.push(currentGroup);
@@ -468,12 +476,12 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({
                                             credits: l.credits,
                                             room: l.room,
                                             day: day as DayKey,
-                                            startPeriod,
-                                            endPeriod,
-                                            startTime: startSlot.start_end?.split("~")[0].trim() ?? periodMap[startPeriod].start,
-                                            endTime: endSlot.start_end?.split("~")[1].trim() ?? periodMap[endPeriod].end,
+                                            startPeriod: startPeriod ?? 0,
+                                            endPeriod: endPeriod ?? 0,
+                                            startTime: startSlot.start_end?.split("~")[0].trim() ?? periodMap[startPeriod ?? 0].start,
+                                            endTime: endSlot.start_end?.split("~")[1].trim() ?? periodMap[endPeriod ?? 0].end,
                                             type: l.type as CourseType,
-                                            color: getColorForCourse(l.code_id ?? l.code ?? String(l.id))
+                                            color: getColorForCourse(l.code ?? String(l.id))
                                         };
                                     });
 

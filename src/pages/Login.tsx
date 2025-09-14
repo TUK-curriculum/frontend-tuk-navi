@@ -19,6 +19,7 @@ import Mascot from '../components/common/Mascot';
 import { useAuth } from '../contexts/AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '../services/AuthService';
+import { apiClient } from '../utils/apiClient';
 
 // 공통 버튼 스타일 정의
 const commonButtonStyles = {
@@ -124,12 +125,44 @@ const Login: React.FC = () => {
         loginMutation.mutate({ email: cleanEmail, password: cleanPassword });
     };
 
-    const handleGoogleLogin = () => {
-        setSnackbar({
-            open: true,
-            message: 'Google 로그인 기능이 곧 추가될 예정입니다.',
-            severity: 'info'
-        });
+    const handleGoogleLogin = async () => {
+        try {
+            setSnackbar({
+                open: true,
+                message: 'Google 로그인을 진행 중입니다...',
+                severity: 'info'
+            });
+
+            const data = await apiClient.auth.googleLogin();
+            
+            contextLogin(data.user.email, '');
+            
+            setSnackbar({
+                open: true,
+                message: 'Google 로그인에 성공했습니다!',
+                severity: 'success'
+            });
+            
+            const from = (location.state as any)?.from?.pathname || '/dashboard';
+            navigate(from);
+            
+        } catch (error: any) {
+            let message = error?.message || 'Google 로그인에 실패했습니다.';
+            
+            if (message.includes('SDK가 로드되지 않았습니다')) {
+                message = 'Google 로그인 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.';
+            } else if (message.includes('팝업이 차단')) {
+                message = '팝업이 차단되었습니다. 브라우저 설정에서 팝업을 허용해주세요.';
+            } else if (message.includes('로그인이 취소')) {
+                message = 'Google 로그인이 취소되었습니다.';
+            }
+            
+            setSnackbar({
+                open: true,
+                message,
+                severity: 'error'
+            });
+        }
     };
 
     const handleCloseSnackbar = () => {
