@@ -21,7 +21,7 @@ export const isProtectedPath = (pathname: string): boolean => {
         '/profile',
         '/graduation',
         '/users',
-        '/course',
+        '/courses',
         '/security-test',
         '/testpage',
         '/profile-setup'

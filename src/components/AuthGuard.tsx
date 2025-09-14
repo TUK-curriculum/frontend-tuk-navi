@@ -21,7 +21,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         '/profile',
         '/graduation',
         '/users',
-        '/course',
+        '/courses',
         '/security-test',
         '/testpage',
         '/profile-setup'
