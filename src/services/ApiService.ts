@@ -81,7 +81,7 @@ export interface BackendRecord {
     grade: string;
     semester: string;
     year: number;
-    category: string;
+    type: string;
 }
 
 export interface BackendCurriculum {
@@ -818,7 +818,9 @@ class ApiService {
 
     // ===== 졸업 관리 =====
     async getGraduationStatus(): Promise<BackendGraduationStatus & {
-        thresholds?: { totalRequired: number; majorRequired: number; liberalRequired: number }
+        thresholds?: { totalRequired: number; majorRequired: number; liberalRequired: number },
+        extra?: Record<string, boolean>,
+        diagnosis?: any
     }> {
         console.log('[ApiService] Fetching graduation status');
         try {
@@ -838,7 +840,9 @@ class ApiService {
                     totalRequired: statusData.pass?.total?.threshold || 130,
                     majorRequired: statusData.pass?.major?.threshold || 69,
                     liberalRequired: statusData.pass?.liberal?.threshold || 37,
-                }
+                },
+                extra: statusData.extra || {},
+                diagnosis: statusData.diagnosis || {}
             };
         } catch (error) {
             console.error('[ApiService] Failed to fetch graduation status:', error);
@@ -853,7 +857,9 @@ class ApiService {
                     totalRequired: 130,
                     majorRequired: 69,
                     liberalRequired: 37,
-                }
+                },
+                extra: {},
+                diagnosis: {}
             };
         }
     }
@@ -884,6 +890,33 @@ class ApiService {
             return null;
         }
     }
+
+    async getRequired() {
+        return apiClient.get<ApiResponse<any>>('/graduation/required');
+    }
+
+    // ===== 졸업 진단 =====
+    async saveGraduationInfo(data: {
+        totalCredits: number;
+        majorRequired: number;
+        generalRequired: number;
+        totalRequired: number;
+        extra: Record<string, boolean>;
+        diagnosis: any;
+    }): Promise<boolean> {
+        console.log('[ApiService] Saving graduation info:', data);
+        try {
+            const { data: res } = await apiClient.post<ApiResponse<null>>('/graduation/status', data);
+            if (!res.success) {
+                throw new Error(res.message || '졸업 정보 저장 실패');
+            }
+            return true;
+        } catch (error) {
+            console.error('[ApiService] Failed to save graduation info:', error);
+            return false;
+        }
+    }
+
 
     // ===== 대시보드 요약 정보 =====
     async getDashboardSummary(): Promise<{

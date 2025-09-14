@@ -27,6 +27,11 @@ export interface GraduationInfo {
     // 확장 필드
     extra?: Record<string, boolean>;
     diagnosis?: any;
+
+    studentId?: number;
+    name?: string;
+    major?: string;
+    enrollmentYear?: number;
 }
 
 export interface Curriculum {
