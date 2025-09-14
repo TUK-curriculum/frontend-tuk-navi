@@ -244,7 +244,11 @@ const Dashboard: React.FC = () => {
         return {
             name: backendProfile?.name || userData.profile?.name || user?.name || '학생',
             grade: backendProfile?.grade || userData.profile?.grade || onboarding.year || '-',
-            credits: backendData.totalCredits || backendProfile?.completedCredits || userData.graduationInfo?.totalCredits || onboarding.completedCredits || 0,
+            credits: creditSummary?.totalCredits
+                || backendProfile?.completedCredits
+                || userData.graduationInfo?.totalCredits
+                || onboarding.completedCredits
+                || 0,
             courses: userData.completedCourses || [],
             interests: backendProfile?.interests || userData.profile?.interests || onboarding.interests || [],
             career: backendProfile?.career || onboarding.career || '미설정',
