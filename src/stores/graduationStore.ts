@@ -8,6 +8,7 @@ export interface Course {
     year: number
     semester: number
     type: string
+    professor: string
     description: string
 }
 
@@ -73,7 +74,7 @@ export const useGraduationStore = create<GraduationState>()(
 
             // STEP 1: 학적 정보
             student: {
-                id: '',
+                id: 0,
                 name: '',
                 dept: '컴퓨터공학부',
                 curriculumYear: new Date().getFullYear()
@@ -207,7 +208,7 @@ export const useGraduationStore = create<GraduationState>()(
             reset: () => set({
                 step: 0,
                 student: {
-                    id: '',
+                    id: 0,
                     name: '',
                     dept: '컴퓨터공학부',
                     curriculumYear: new Date().getFullYear()

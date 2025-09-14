@@ -94,26 +94,23 @@ export default function Profile() {
                 console.log('졸업 요건 데이터:', res);
 
                 if (res?.success && res.data) {
-                const { disqualifications = [], flags, pass } = res.data;
+                    const data = res.data
 
-                setCredits(prev => ({
-                    major: pass.major.actual,
-                    liberal: pass.liberal.actual,
-                    total: pass.total.actual,
-                    averageGrade: prev?.averageGrade
-                }));
+                    setCredits(prev => ({
+                        major: data.majorRequired,
+                        liberal: data.generalRequired,
+                        total: data.totalCredits,
+                        averageGrade: prev?.averageGrade
+                    }));
 
-                setRequiredThresholds({
-                    majorRequired: pass.major.threshold,
-                    liberalRequired: pass.liberal.threshold,
-                    totalRequired: pass.total.threshold
-                });
+                    setRequiredThresholds({
+                        majorRequired: data.diagnosis.majorRequired,
+                        liberalRequired: data.diagnosis.liberalRequired,
+                        totalRequired: data.totalRequired
+                    });
 
-                const english = flags?.englishRequirementMet ?? !disqualifications.includes('어학자격 미취득');
-                const internship = flags?.internshipCompleted ?? !disqualifications.includes('현장실무교과 미이수');
-                const capstone = flags?.capstoneCompleted ?? !disqualifications.includes('종합설계 미이수');
-                setExtra({ english, internship, capstone });
-            }
+                    setExtra(data.extra || {});
+                }
             } catch (e) {
                 console.warn('졸업 정보 조회 실패:', e);
             }
@@ -232,6 +229,12 @@ export default function Profile() {
         setTimeout(() => loadDataFromBackend(), 300);
     };
 
+    const normalizedExtra = {
+        capstone: extra.capstoneCompleted,
+        english: extra.englishRequirementMet,
+        internship: extra.internshipCompleted,
+    };
+
     return (
         <Box maxWidth={900} mx="auto" px={2} py={4}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -272,7 +275,7 @@ export default function Profile() {
 
             <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
                 <DialogContent sx={{ p: 0 }}>
-                    <Graduation />
+                    <Graduation onClose={handleClose} />
                 </DialogContent>
             </Dialog>
 
@@ -440,18 +443,14 @@ export default function Profile() {
                         </Typography>
                         <Grid container spacing={2}>
                             {[
-                                { key: 'capstone', label: '졸업작품(종합설계) 이수' },
-                                { key: 'english', label: '공인어학성적 요건 충족' },
-                                { key: 'internship', label: '현장실습/실무 경험 이수' }
-                            ].map(item => (
-                                <Grid item xs={12} sm={4} key={item.key}>
+                                { value: normalizedExtra.capstone, label: '졸업작품(종합설계) 이수' },
+                                { value: normalizedExtra.english, label: '공인어학성적 요건 충족' },
+                                { value: normalizedExtra.internship, label: '현장실습/실무 경험 이수' },
+                            ].map((item, idx) => (
+                                <Grid item xs={12} sm={4} key={idx}>
                                     <Paper sx={{ p: 2, textAlign: 'center' }}>
-                                        <Typography variant="subtitle1">{item.label}</Typography>
-                                        {extra[item.key] ? (
-                                            <CheckCircle color="success" />
-                                        ) : (
-                                            <Warning color="warning" />
-                                        )}
+                                    <Typography variant="subtitle1">{item.label}</Typography>
+                                    {item.value ? <CheckCircle color="success" /> : <Warning color="warning" />}
                                     </Paper>
                                 </Grid>
                             ))}

@@ -13,9 +13,11 @@ import {
 import courseCatalog from '../data/courseCatalog.json';
 import { useData } from '../contexts/SeparatedDataContext';
 import { useAuth } from '../contexts/AuthContext';
+import { apiService, BackendGraduationStatus, BackendRecord } from '../services/ApiService';
 
 // Course 타입은 store에서 import (full type)
 import type { Course as StoreCourse } from '../stores/graduationStore';
+import { mapRecordToCourse } from '@/utils/mapper';
 
 // 타입 정의
 interface GraduationState {
@@ -26,7 +28,6 @@ interface GraduationState {
     curriculumYear: number;
     major: number;
     liberal: number;
-    basic: number;
     searchTerm: string;
     filterType: string;
 }
@@ -45,7 +46,6 @@ const initialState: GraduationState = {
     curriculumYear: 2025,
     major: 0,
     liberal: 0,
-    basic: 0,
     searchTerm: '',
     filterType: '전체',
 };
@@ -77,6 +77,17 @@ const validateName = (name: string): boolean => {
 const validateCurriculumYear = (year: number): boolean => {
     return year >= 2000 && year <= 2030;
 };
+
+const mapExtraForBackend = (extra: Record<string, boolean>) => ({
+    capstoneCompleted: extra.capstone ?? false,
+    englishRequirementMet: extra.english ?? false,
+    internshipCompleted: extra.internship ?? false,
+});
+
+const mapDiagnosisForBackend = (diagnosis: any) => ({
+    disqualifications: diagnosis.lackItems || [],
+});
+
 
 // Step1 컴포넌트 - 입력 검증 추가
 interface Step1Props {
@@ -215,221 +226,149 @@ function Step1({ id, name, dept, curriculumYear, onChange }: Step1Props) {
 interface Step2Props {
     major: number;
     liberal: number;
-    basic: number;
-    onChange: (field: keyof GraduationState, value: any) => void;
 }
 
-function Step2({ major, liberal, basic, onChange }: Step2Props) {
-    const [majorInput, setMajorInput] = useState(major.toString());
-    const [liberalInput, setLiberalInput] = useState(liberal.toString());
-    const [basicInput, setBasicInput] = useState(basic.toString());
-
-    const handleInput = (field: keyof GraduationState, value: string, setInput: (v: string) => void) => {
-        if (/^\d*$/.test(value)) {
-            setInput(value);
-            onChange(field, value === '' ? 0 : Number(value));
-        }
-    };
-
-    const total = (Number(majorInput) || 0) + (Number(liberalInput) || 0) + (Number(basicInput) || 0);
+function Step2({ major, liberal }: Step2Props) {
+    const total = (major || 0) + (liberal || 0);
 
     const creditFields = [
-        { key: 'major', label: '전공 학점', value: majorInput, set: setMajorInput, required: 69, color: 'secondary' },
-        { key: 'liberal', label: '교양 학점', value: liberalInput, set: setLiberalInput, required: 37, color: 'success' },
-        { key: 'basic', label: '기초/계열 학점', value: basicInput, set: setBasicInput, required: 0, color: 'info' }
+        { key: 'major', label: '전공 학점', value: major, required: 69, color: 'secondary' },
+        { key: 'liberal', label: '교양 학점', value: liberal, required: 37, color: 'success' },
     ];
 
     return (
         <Card sx={{ p: 3, mb: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Assessment color="primary" /> 학점 입력
-            </Typography>
-            <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3} key="total">
-                    <TextField
-                        label="총 이수학점"
-                        fullWidth
-                        value={total}
-                        InputProps={{ readOnly: true }}
-                        helperText={`필수: 130학점`}
-                    />
-                    <Box mt={1}>
-                        <LinearProgress
-                            variant="determinate"
-                            value={Math.min((total / 130) * 100, 100)}
-                            color={"primary" as any}
-                            sx={{ height: 8, borderRadius: 4 }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                            {total}/130 ({Math.round((total / 130) * 100)}%)
-                        </Typography>
-                    </Box>
-                </Grid>
-                {creditFields.map(field => (
-                    <Grid item xs={12} sm={6} md={3} key={field.key}>
-                        <TextField
-                            type="text"
-                            label={field.label}
-                            fullWidth
-                            value={field.value}
-                            onChange={e => handleInput(field.key as keyof GraduationState, e.target.value, field.set)}
-                            inputProps={{ inputMode: 'numeric', pattern: '\\d*', maxLength: 3 }}
-                            helperText={`필수: ${field.required}학점`}
-                        />
-                        {field.required > 0 && (
-                            <Box mt={1}>
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={Math.min(((Number(field.value) || 0) / field.required) * 100, 100)}
-                                    color={field.color as any}
-                                    sx={{ height: 8, borderRadius: 4 }}
-                                />
-                                <Typography variant="caption" color="text.secondary">
-                                    {field.value}/{field.required} ({Math.round(((Number(field.value) || 0) / field.required) * 100)}%)
-                                </Typography>
-                            </Box>
-                        )}
-                    </Grid>
-                ))}
-            </Grid>
-            <Box mt={3}>
-                <Typography variant="subtitle1" gutterBottom>전체 졸업 진척도</Typography>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Assessment color="primary" /> 학점 현황
+        </Typography>
+        <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={4} key="total">
+            <TextField
+                label="총 이수학점"
+                fullWidth
+                value={total}
+                InputProps={{ readOnly: true }}
+                helperText={`필수: 130학점`}
+            />
+            <Box mt={1}>
                 <LinearProgress
                     variant="determinate"
                     value={Math.min((total / 130) * 100, 100)}
-                    sx={{ height: 12, borderRadius: 6 }}
-                    color={"primary" as any}
+                    color="primary"
+                    sx={{ height: 8, borderRadius: 4 }}
                 />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    총 {total}학점 / 130학점 ({Math.round((total / 130) * 100)}%)
+                <Typography variant="caption" color="text.secondary">
+                    {total}/130 ({Math.round((total / 130) * 100)}%)
                 </Typography>
             </Box>
+            </Grid>
+
+            {creditFields.map(field => (
+            <Grid item xs={12} sm={6} md={4} key={field.key}>
+                <TextField
+                    type="number"
+                    label={field.label}
+                    fullWidth
+                    value={field.value}
+                    InputProps={{ readOnly: true }}
+                    helperText={`필수: ${field.required}학점`}
+                />
+                {field.required > 0 && (
+                <Box mt={1}>
+                    <LinearProgress
+                        variant="determinate"
+                        value={Math.min(((field.value || 0) / field.required) * 100, 100)}
+                        color={field.color as any}
+                        sx={{ height: 8, borderRadius: 4 }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                        {field.value}/{field.required} (
+                        {Math.round(((field.value || 0) / field.required) * 100)}%)
+                    </Typography>
+                </Box>
+                )}
+            </Grid>
+            ))}
+        </Grid>
+
+        <Box mt={3}>
+            <Typography variant="subtitle1" gutterBottom>전체 졸업 진척도</Typography>
+            <LinearProgress
+                variant="determinate"
+                value={Math.min((total / 130) * 100, 100)}
+                sx={{ height: 12, borderRadius: 6 }}
+                color="primary"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                총 {total}학점 / 130학점 ({Math.round((total / 130) * 100)}%)
+            </Typography>
+        </Box>
         </Card>
     );
 }
 
+
 interface Step3Props {
-    searchTerm: GraduationState['searchTerm'];
-    filterType: GraduationState['filterType'];
-    onChange: (field: keyof GraduationState, value: any) => void;
-    filteredCourses: StoreCourse[];
-    completedCourses: StoreCourse[];
-    addCourse: (course: StoreCourse) => void;
-    removeCourse: (code: string) => void;
+    completedRequired: StoreCourse[];
+    missingRequired: StoreCourse[];
 }
 
-function Step3({ searchTerm, filterType, onChange, filteredCourses, completedCourses, addCourse, removeCourse }: Step3Props) {
-    const isRequired = (course: StoreCourse) => course.type === '전공필수' || course.type === '교양필수';
-    const requiredCourses = filteredCourses.filter(isRequired);
-
-    const yearGroups: { [key: string]: StoreCourse[] } = {};
-    requiredCourses.forEach(course => {
-        const year = (typeof course.year === 'number' && course.year >= 1 && course.year <= 4) ? `${course.year}학년` : '기타';
-        if (!yearGroups[year]) yearGroups[year] = [];
-        yearGroups[year].push(course);
-    });
-
-    const yearOrder = ['1학년', '2학년', '3학년', '4학년', '기타'];
-
+function Step3({ completedRequired, missingRequired }: Step3Props) {
     return (
         <Card sx={{ p: 3, mb: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TableChart color="primary" /> 필수 과목 선택
-            </Typography>
-            <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, maxHeight: 400, overflow: 'auto' }}>
-                        <Typography variant="subtitle2" gutterBottom>필수 과목 카탈로그</Typography>
-                        <Box sx={{ mb: 2 }}>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="과목명 또는 학수번호로 검색..."
-                                value={searchTerm}
-                                onChange={e => onChange('searchTerm', e.target.value)}
-                                sx={{ mb: 1 }}
-                            />
-                            <FormControl size="small" fullWidth>
-                                <InputLabel>이수구분</InputLabel>
-                                <Select
-                                    value={filterType}
-                                    onChange={e => onChange('filterType', e.target.value)}
-                                    label="이수구분"
-                                >
-                                    <MenuItem value="전체">전체</MenuItem>
-                                    <MenuItem value="전공필수">전공필수</MenuItem>
-                                    <MenuItem value="교양필수">교양필수</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Box>
-                        {yearOrder.filter(y => yearGroups[y] && yearGroups[y].length > 0).map(year => (
-                            <Box key={year} sx={{ mb: 2 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
-                                    <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>{year}</Typography>
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        sx={{ minWidth: 0, px: 1, py: 0, fontSize: 12 }}
-                                        onClick={() => {
-                                            // 해당 학년의 모든 과목을 추가
-                                            yearGroups[year].forEach(course => addCourse(course));
-                                        }}
-                                    >
-                                        전체 추가
-                                    </Button>
-                                </Box>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    {yearGroups[year].map((course) => (
-                                        <Chip
-                                            key={course.code}
-                                            label={`${course.name} (${course.credit}학점)`}
-                                            size="small"
-                                            onClick={() => addCourse(course)}
-                                            color={course.type === '전공필수' ? 'error' : 'primary'}
-                                            variant="outlined"
-                                            sx={{ cursor: 'pointer', '&:hover': { backgroundColor: 'action.hover' } }}
-                                        />
-                                    ))}
-                                </Box>
-                            </Box>
-                        ))}
-                    </Paper>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, minHeight: 400 }}>
-                        <Typography variant="subtitle2" gutterBottom>
-                            선택된 필수 과목 ({completedCourses.length}개)
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        {completedCourses.length === 0 ? (
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Info color="action" sx={{ fontSize: 48, mb: 1 }} />
-                                <Typography variant="body2" color="text.secondary">
-                                    왼쪽에서 필수 과목을 클릭하여 추가하세요
-                                </Typography>
-                            </Box>
-                        ) : (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                {completedCourses.map((course) => (
-                                    <Paper key={course.code} sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" fontWeight="bold">
-                                                {course.name}
-                                            </Typography>
-                                            <Typography variant="caption" color="text.secondary">
-                                                {course.code} • {course.credit}학점 • {course.type}
-                                            </Typography>
-                                        </Box>
-                                        <IconButton size="small" onClick={() => removeCourse(course.code)} color="error">
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                    </Paper>
-                                ))}
-                            </Box>
-                        )}
-                    </Paper>
-                </Grid>
+        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TableChart color="primary" /> 필수 과목 현황
+        </Typography>
+
+        <Grid container spacing={2}>
+            {/* 이수 과목 */}
+            <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, minHeight: 300 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                    ✅ 이수한 필수 과목 ({completedRequired.length}개)
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                    {completedRequired.length === 0 ? (
+                <Typography color="text.secondary">아직 이수한 필수 과목이 없습니다.</Typography>
+                ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {completedRequired.map((course) => (
+                    <Chip
+                        key={course.code}
+                        label={`${course.name} (${course.credit}학점)`}
+                        color="success"
+                        variant="outlined"
+                    />
+                    ))}
+                </Box>
+                )}
+            </Paper>
             </Grid>
+
+            {/* 미이수 과목 */}
+            <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, minHeight: 300 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                    ❌ 미이수 필수 과목 ({missingRequired.length}개)
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                    {missingRequired.length === 0 ? (
+                <Typography color="text.secondary">모든 필수 과목을 이수했습니다!</Typography>
+                ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {missingRequired.map((course) => (
+                    <Chip
+                        key={course.code}
+                        label={`${course.name} (${course.credit}학점)`}
+                        color="error"
+                        variant="outlined"
+                    />
+                    ))}
+                </Box>
+                )}
+            </Paper>
+            </Grid>
+        </Grid>
         </Card>
     );
 }
@@ -514,12 +453,23 @@ interface Diagnosis {
 }
 
 interface Step5Props {
-    diagnosis: Diagnosis;
+    diagnosis?: Diagnosis;
     onSave: () => void;
     saveStatus: string;
 }
 
 function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
+    const safeDiagnosis: Diagnosis = diagnosis ?? {
+        lackItems: [],
+        completionRate: 0,
+        totalCompleted: 0,
+        totalRequired: 130,
+        majorCompleted: 0,
+        majorRequired: 69,
+        liberalCompleted: 0,
+        liberalRequired: 37
+    };
+
     return (
         <Card sx={{ p: 3, mb: 2 }}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -529,13 +479,13 @@ function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                     <CircularProgress
                         variant="determinate"
-                        value={diagnosis.completionRate}
+                        value={safeDiagnosis.completionRate ?? 0}
                         size={60}
-                        color={diagnosis.completionRate >= 100 ? 'success' : 'primary'}
+                        color={safeDiagnosis.completionRate >= 100 ? 'success' : 'primary'}
                     />
                     <Box>
                         <Typography variant="h4" fontWeight="bold">
-                            {diagnosis.completionRate}%
+                            {safeDiagnosis.completionRate}%
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                             졸업 요건 완료율
@@ -545,9 +495,9 @@ function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
             </Box>
             <Grid container spacing={2} sx={{ mb: 3 }}>
                 {[
-                    { label: '총 학점', completed: diagnosis.totalCompleted, required: diagnosis.totalRequired, color: 'primary' },
-                    { label: '전공 학점', completed: diagnosis.majorCompleted, required: diagnosis.majorRequired, color: 'secondary' },
-                    { label: '교양 학점', completed: diagnosis.liberalCompleted, required: diagnosis.liberalRequired, color: 'success' }
+                    { label: '총 학점', completed: safeDiagnosis.totalCompleted, required: safeDiagnosis.totalRequired, color: 'primary' },
+                    { label: '전공 학점', completed: safeDiagnosis.majorCompleted, required: safeDiagnosis.majorRequired, color: 'secondary' },
+                    { label: '교양 학점', completed: safeDiagnosis.liberalCompleted, required: safeDiagnosis.liberalRequired, color: 'success' }
                 ].map((item, idx) => (
                     <Grid item xs={12} md={4} key={item.label}>
                         <Paper sx={{ p: 2, textAlign: 'center' }}>
@@ -567,7 +517,7 @@ function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
                     </Grid>
                 ))}
             </Grid>
-            {diagnosis.lackItems.length === 0 ? (
+            {safeDiagnosis.lackItems.length === 0 ? (
                 <Alert severity="success" icon={<CheckCircle />}>
                     모든 졸업 요건을 충족했습니다! 졸업 신청이 가능합니다.
                 </Alert>
@@ -577,7 +527,7 @@ function Step5({ diagnosis, onSave, saveStatus }: Step5Props) {
                         부족한 요건이 있습니다:
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                        {diagnosis.lackItems.map((item, index) => (
+                        {safeDiagnosis.lackItems.map((item, index) => (
                             <Chip
                                 key={index}
                                 label={item}
@@ -608,10 +558,15 @@ const saveToDataContext = (updateGraduationInfo: (info: any) => void, data: any)
     }
 };
 
-export default function Graduation() {
-    const [state, dispatch] = useReducer(reducer, initialState);
+interface GraduationProps {
+  onClose: () => void;
+}
+
+export default function Graduation({ onClose }: GraduationProps) {
+    const [state, dispatch] = useReducer(reducer, initialState)
     const [saveStatus, setSaveStatus] = useState('');
     const { user } = useAuth();
+
     // graduation 관련 상태/메서드 useData에서 추출
     const {
         graduationInfo,
@@ -621,11 +576,61 @@ export default function Graduation() {
         removeCompletedCourse
     } = useData();
 
-    // graduationExtra, graduationDiagnosis 등은 graduationInfo의 extra, diagnosis 필드로 통합
-    const graduationExtra = graduationInfo.extra || {};
-    const setGraduationExtra = (extra: Record<string, boolean>) => {
-        updateGraduationInfo({ extra });
-    };
+    console.log('[DEBUG] graduationInfo.extra:', graduationInfo?.extra);
+
+    const [completedRequired, setCompletedRequired] = useState<StoreCourse[]>([]);
+    const [missingRequired, setMissingRequired] = useState<StoreCourse[]>([]);
+
+    const [graduationExtra, setGraduationExtra] = useState<Record<string, boolean>>({
+        capstone: false,
+        english: false,
+        internship: false,
+    });
+
+    React.useEffect(() => {
+    if (graduationInfo.extra) {
+            setGraduationExtra({
+                capstone: graduationInfo.extra.capstoneCompleted ?? false,
+                english: graduationInfo.extra.englishRequirementMet ?? false,
+                internship: graduationInfo.extra.internshipCompleted ?? false,
+            });
+        }
+    }, [graduationInfo.extra]);
+
+    React.useEffect(() => {
+        const loadRequired = async () => {
+        try {
+            const { data: res } = await apiService.getRequired();
+            setMissingRequired(
+                (res?.data?.missing || []).map((r: any) => ({
+                code: r.courseCode,
+                name: r.name,
+                credit: r.credits,
+                type: r.type === 'MR' ? '전공필수' : '교양필수',
+                year: 0,
+                semester: 0,
+                professor: '',
+                description: '',
+                }))
+            );
+
+            const records = await apiService.getRecords();
+            const completed = records
+                .filter((r) => (r.type === 'MR' || r.type === 'GR') && r.grade !== 'F' && r.grade !== 'NP')
+                .map(mapRecordToCourse);
+
+            setCompletedRequired(completed);
+        } catch (err) {
+            console.error('필수 과목 불러오기 실패:', err);
+        }
+        };
+
+        loadRequired();
+    }, []);
+
+    const major = graduationInfo.majorRequired ?? 0;
+    const liberal = graduationInfo.generalRequired ?? 0;
+
     const graduationDiagnosis = graduationInfo.diagnosis || {
         lackItems: [],
         completionRate: 0,
@@ -636,57 +641,44 @@ export default function Graduation() {
         liberalCompleted: 0,
         liberalRequired: 37
     };
+
+    const [diagnosis, setDiagnosis] = useState<Diagnosis>({
+        lackItems: [],
+        completionRate: 0,
+        totalCompleted: 0,
+        totalRequired: 130,
+        majorCompleted: 0,
+        majorRequired: 69,
+        liberalCompleted: 0,
+        liberalRequired: 37
+    });
+
     const runGraduationDiagnosis = () => {
-        // 진단 로직 구현
-        const total = state.major + state.liberal + state.basic;
+        const total = state.major + state.liberal;
         const requiredTotal = 130;
         const lackItems: string[] = [];
 
-        // 총 학점 체크
         if (total < requiredTotal) {
             lackItems.push(`총 학점 부족 (현재: ${total}, 필요: ${requiredTotal})`);
         }
-
-        // 전공 학점 체크 (일반적으로 69학점 이상)
-        const requiredMajor = 69;
-        if (state.major < requiredMajor) {
-            lackItems.push(`전공 학점 부족 (현재: ${state.major}, 필요: ${requiredMajor})`);
+        if (state.major < 69) {
+            lackItems.push(`전공 학점 부족 (현재: ${state.major}, 필요: 69)`);
+        }
+        if (state.liberal < 37) {
+            lackItems.push(`교양 학점 부족 (현재: ${state.liberal}, 필요: 37)`);
         }
 
-        // 교양 학점 체크 (일반적으로 37학점 이상)
-        const requiredLiberal = 37;
-        if (state.liberal < requiredLiberal) {
-            lackItems.push(`교양 학점 부족 (현재: ${state.liberal}, 필요: ${requiredLiberal})`);
-        }
-
-        // 기초 학점 체크 (일반적으로 24학점 이상)
-        const requiredBasic = 24;
-        if (state.basic < requiredBasic) {
-            lackItems.push(`기초 학점 부족 (현재: ${state.basic}, 필요: ${requiredBasic})`);
-        }
-
-        // 기타 요건 체크
         Object.entries(graduationExtra).forEach(([key, value]) => {
             if (!value) {
                 switch (key) {
-                    case 'capstone':
-                        lackItems.push('졸업작품(캡스톤디자인) 미이수');
-                        break;
-                    case 'english':
-                        lackItems.push('공인어학성적 미충족');
-                        break;
-                    case 'internship':
-                        lackItems.push('현장실습 미이수');
-                        break;
-                    case 'volunteer':
-                        lackItems.push('사회봉사 미이수');
-                        break;
+                    case 'capstone': lackItems.push('졸업작품(캡스톤디자인) 미이수'); break;
+                    case 'english': lackItems.push('공인어학성적 미충족'); break;
+                    case 'internship': lackItems.push('현장실습 미이수'); break;
                 }
             }
         });
 
-        // 진단 결과 저장
-        const diagnosis = {
+        const newDiagnosis: Diagnosis = {
             lackItems,
             completionRate: Math.round((total / requiredTotal) * 100),
             totalCompleted: total,
@@ -697,8 +689,10 @@ export default function Graduation() {
             liberalRequired: 37
         };
 
-        updateGraduationInfo({ diagnosis });
+        setDiagnosis(newDiagnosis);
+        updateGraduationInfo({ diagnosis: newDiagnosis });
     };
+
     const resetGraduationData = () => {
         updateGraduationInfo({
             totalCredits: 0,
@@ -716,45 +710,98 @@ export default function Graduation() {
 
     // 회원가입 프로필 정보로 기본 정보 자동 세팅
     React.useEffect(() => {
-        if (user && user.profile) {
-            if (user.profile.studentId) {
-                dispatch({ type: 'SET_FIELD', field: 'id', value: user.profile.studentId });
+        const loadProfile = async () => {
+            try {
+            const profile = await apiService.getProfile();
+
+            if (profile) {
+                dispatch({ type: 'SET_FIELD', field: 'id', value: profile.studentId });
+                dispatch({ type: 'SET_FIELD', field: 'name', value: profile.name });
+                dispatch({ type: 'SET_FIELD', field: 'dept', value: profile.major });
+                
+                // 입학년도 처리
+                if (profile.enrollmentYear) {
+                dispatch({ type: 'SET_FIELD', field: 'curriculumYear', value: profile.enrollmentYear });
+                }
             }
-            if (user.name) {
-                dispatch({ type: 'SET_FIELD', field: 'name', value: user.name });
+            } catch (err) {
+            console.error('프로필 불러오기 실패:', err);
             }
-            if (user.profile.major) {
-                dispatch({ type: 'SET_FIELD', field: 'dept', value: user.profile.major });
+        };
+
+        loadProfile();
+    }, []);
+
+    React.useEffect(() => {
+        const loadCredits = async () => {
+            try {
+                const summary = await apiService.getSummary();
+                dispatch({ type: 'SET_FIELD', field: 'major', value: summary.majorCredits });
+                dispatch({ type: 'SET_FIELD', field: 'liberal', value: summary.liberalCredits });
+            } catch (err) {
+                console.error('학점 요약 불러오기 실패:', err);
             }
-            // 입학년도: 여러 필드 중 우선순위로 세팅 (profileAny로 접근)
-            let year: number | undefined = undefined;
-            const profileAny = user.profile as any;
-            if (profileAny && profileAny.enrollmentYear) {
-                year = Number(profileAny.enrollmentYear);
-            } else if (profileAny && profileAny.enrollmentDate) {
-                const d = new Date(profileAny.enrollmentDate);
-                if (!isNaN(d.getFullYear())) year = d.getFullYear();
-            }
-            if (year) {
-                dispatch({ type: 'SET_FIELD', field: 'curriculumYear', value: year });
-            }
-        }
-    }, [user]);
+        };
+
+        loadCredits();
+    }, []);
 
     // 저장 함수: 졸업관리 입력 정보를 DataContext에 저장
     const saveGraduationInfo = async () => {
-        const newData = {
-            totalCredits: state.major + state.liberal + state.basic,
-            majorRequired: state.major,
-            majorElective: 0,
-            generalRequired: state.liberal,
-            generalElective: state.basic,
-            totalRequired: state.major + state.liberal + state.basic
+        const total = state.major + state.liberal;
+        const requiredTotal = 130;
+
+        const lackItems: string[] = [];
+        if (total < requiredTotal) {
+            lackItems.push(`총 학점 부족 (현재: ${total}, 필요: ${requiredTotal})`);
+        }
+        if (state.major < 69) {
+            lackItems.push(`전공 학점 부족 (현재: ${state.major}, 필요: 69)`);
+        }
+        if (state.liberal < 37) {
+            lackItems.push(`교양 학점 부족 (현재: ${state.liberal}, 필요: 37)`);
+        }
+
+        Object.entries(graduationExtra).forEach(([key, value]) => {
+            if (!value) {
+                switch (key) {
+                    case 'capstone': lackItems.push('졸업작품(캡스톤디자인) 미이수'); break;
+                    case 'english': lackItems.push('공인어학성적 미충족'); break;
+                    case 'internship': lackItems.push('현장실습 미이수'); break;
+                }
+            }
+        });
+
+        const latestDiagnosis: Diagnosis = {
+            lackItems,
+            completionRate: Math.round((total / requiredTotal) * 100),
+            totalCompleted: total,
+            totalRequired: requiredTotal,
+            majorCompleted: state.major,
+            majorRequired: 69,
+            liberalCompleted: state.liberal,
+            liberalRequired: 37,
         };
-        updateGraduationInfo(newData);
-        setSaveStatus('저장되었습니다!');
-        setTimeout(() => setSaveStatus(''), 2000);
+
+        const backendData = {
+            totalCredits: total,
+            majorRequired: state.major,
+            generalRequired: state.liberal,
+            totalRequired: requiredTotal,
+            extra: mapExtraForBackend(graduationExtra),
+            diagnosis: mapDiagnosisForBackend(latestDiagnosis),
+        };
+
+        try {
+            await apiService.saveGraduationInfo(backendData);
+            updateGraduationInfo(backendData);
+            setDiagnosis(latestDiagnosis);
+            onClose();
+        } catch (err) {
+            console.error('저장 실패:', err);
+        }
     };
+
 
     // 각 단계별 입력 검증
     const canProceedToNext = (): boolean => {
@@ -765,7 +812,7 @@ export default function Graduation() {
                     state.dept.trim() !== '' &&
                     validateCurriculumYear(state.curriculumYear);
             case 1: // 학점 입력
-                return state.major >= 0 && state.liberal >= 0 && state.basic >= 0;
+                return state.major >= 0 && state.liberal >= 0;
             case 2: // 과목 선택
                 return true; // 선택 과목이므로 필수 아님
             case 3: // 기타 요건
@@ -787,17 +834,26 @@ export default function Graduation() {
             });
         }
         if (state.step === 1) {
-            const total = state.major + state.liberal + state.basic;
+            const total = state.major + state.liberal;
             updateGraduationInfo({
                 majorRequired: state.major,
                 generalRequired: state.liberal,
-                generalElective: state.basic,
                 totalCredits: total,
                 totalRequired: total
             });
         }
         if (state.step === 3) {
             runGraduationDiagnosis();
+
+            try {
+                const res = await apiService.getGraduationStatus();
+                if (res) {
+                    updateGraduationInfo(res);
+                    setDiagnosis(res.diagnosis);
+                }
+            } catch (err) {
+                console.error('졸업 상태 조회 실패:', err);
+            }
         }
         dispatch({ type: 'NEXT_STEP' });
     };
@@ -817,21 +873,11 @@ export default function Graduation() {
     }) as StoreCourse[];
 
     const steps = [
-        { label: '기본 정보', component: <Step1 {...state} onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })} /> },
-        { label: '학점 입력', component: <Step2 major={state.major} liberal={state.liberal} basic={state.basic} onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })} /> },
-        {
-            label: '과목 선택', component: <Step3
-                searchTerm={state.searchTerm}
-                filterType={state.filterType}
-                onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })}
-                filteredCourses={filteredCourses}
-                completedCourses={completedCourses as any}
-                addCourse={addCompletedCourse as any}
-                removeCourse={removeCompletedCourse as any}
-            />
-        },
+        { label: '기본 정보', component: <Step1 {...state} onChange={(f, v) => dispatch({ type: 'SET_FIELD', field: f, value: v })} /> },
+        { label: '학점 입력', component: <Step2 major={state.major} liberal={state.liberal} /> },
+        { label: '필수 과목 현황', component: <Step3 completedRequired={completedRequired} missingRequired={missingRequired} /> },
         { label: '기타 요건', component: <Step4 extra={graduationExtra} setExtra={setGraduationExtra} /> },
-        { label: '결과', component: <Step5 diagnosis={graduationDiagnosis} onSave={saveGraduationInfo} saveStatus={saveStatus} /> }
+        { label: '결과', component: <Step5 diagnosis={diagnosis} onSave={saveGraduationInfo} saveStatus={saveStatus} /> }
     ];
 
     return (

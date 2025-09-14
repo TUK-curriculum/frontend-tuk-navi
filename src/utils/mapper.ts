@@ -1,4 +1,6 @@
 import { Course, DayKey, CourseType } from "@/types/course";
+import type { BackendRecord } from '@/services/ApiService';
+import type { Course as GraduationCourse } from '@/stores/graduationStore';
 
 const dayMap: Record<string, DayKey> = {
   MON: "monday",
@@ -56,3 +58,32 @@ export function courseToSlot(course: Course): any {
     color: course.color || "#FF6B6B",
   };
 }
+
+export const mapRecordToCourse = (r: BackendRecord): GraduationCourse => {
+  return {
+    code: r.courseCode,
+    name: r.courseName,
+    credit: r.credits,
+    type: mapCategoryToType(r.type),
+    year: r.year ?? 0,
+    semester: parseSemester(r.semester),
+    professor: '',
+    description: '',
+  };
+};
+
+const mapCategoryToType = (cat: string): string => {
+  switch (cat) {
+    case 'MR': return '전공필수';
+    case 'ME': return '전공선택';
+    case 'GR': return '교양필수';
+    case 'GE': return '교양선택';
+    default:   return '기타';
+  }
+};
+
+const parseSemester = (sem: string): number => {
+  if (!sem) return 0;
+  const match = sem.match(/(\d)학기$/);
+  return match ? parseInt(match[1]) : 0;
+};
