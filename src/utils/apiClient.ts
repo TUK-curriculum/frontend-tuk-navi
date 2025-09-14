@@ -12,9 +12,28 @@ const setAuthToken = (token: string): void => {
     }
 };
 
+const setRefreshToken = (token: string): void => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('refreshToken', token);
+    }
+};
+
 const removeAuthToken = (): void => {
     if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
+    }
+};
+
+// 사용자 정보 저장/제거
+const setUserInfo = (user: any): void => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('userInfo', JSON.stringify(user));
+    }
+};
+
+const removeUserInfo = (): void => {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('userInfo');
     }
 };
 
@@ -49,6 +68,11 @@ const handleResponse = async (response: Response) => {
     return response.json();
 };
 
+const handleGoogleLogin = async (): Promise<any> => {
+    window.location.href = `${API_BASE_URL}/auth/google`;
+    return Promise.resolve();
+};
+
 // API 클라이언트
 export const apiClient = {
     // 인증 관련 API
@@ -64,6 +88,16 @@ export const apiClient = {
             const data = await handleResponse(response);
             setAuthToken(data.accessToken);
             return data;
+        },
+
+        // 구글 소셜 로그인
+        googleLogin: async () => {
+            try {
+                return await handleGoogleLogin();
+            } catch (error) {
+                console.error('Google login error:', error);
+                throw error;
+            }
         },
 
         // 회원가입
@@ -89,6 +123,26 @@ export const apiClient = {
             } finally {
                 removeAuthToken();
             }
+        },
+
+        // 토큰 갱신
+        refreshToken: async () => {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                throw new Error('Refresh token not found');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                method: 'POST',
+                headers: createHeaders(false),
+                body: JSON.stringify({ refreshToken }),
+            });
+
+            const data = await handleResponse(response);
+            setAuthToken(data.accessToken);
+            setRefreshToken(data.refreshToken);
+            
+            return data;
         },
 
         // 사용자 정보 조회
@@ -465,6 +519,20 @@ export const refreshToken = async (): Promise<boolean> => {
         console.error('토큰 갱신 실패:', error);
         return false;
     }
+};
+
+// 인증 상태 확인 유틸리티
+export const isAuthenticated = (): boolean => {
+    return !!getAuthToken();
+};
+
+// 사용자 정보 가져오기 유틸리티
+export const getUserInfo = (): any | null => {
+    if (typeof window !== 'undefined') {
+        const userInfo = localStorage.getItem('userInfo');
+        return userInfo ? JSON.parse(userInfo) : null;
+    }
+    return null;
 };
 
 // 인터셉터: 401 에러 시 토큰 갱신 시도

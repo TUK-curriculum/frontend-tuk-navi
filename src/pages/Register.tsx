@@ -65,6 +65,7 @@ import GradientButton from '../components/common/GradientButton';
 import Mascot from '../components/common/Mascot';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../components/common/NotificationSystem';
+import { authService } from '@/services';
 
 // 폼 검증 스키마
 // 전화번호 정규식 (010-1234-5678)
@@ -368,13 +369,17 @@ function formatPhoneNumber(value: string) {
     return onlyNums.replace(/(\d{3})(\d{4})(\d{1,4})/, '$1-$2-$3');
 }
 
-const Register: React.FC = () => {
+interface RegisterProps {
+    startStep?: number;
+}
+
+const Register: React.FC<RegisterProps> = ({ startStep = 0 }) => {
     const navigate = useNavigate();
     const { register: authRegister } = useAuth();
     const { showNotification } = useNotification();
 
     // 폼 상태
-    const [step, setStep] = useState(0);
+    const [step, setStep] = useState(startStep);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -463,116 +468,48 @@ const Register: React.FC = () => {
         setStep(step - 1);
     };
 
-    const handleRegister: SubmitHandler<BasicInfoForm> = async (basicData) => {
+    const { user } = useAuth(); 
+
+    const handleRegister = async () => {
+        const basicData = basicInfoForm.getValues();
         const academicData = academicInfoForm.getValues();
 
         setIsLoading(true);
         try {
-            // 기본정보 검증
-            const basicResult = await basicInfoSchema.safeParseAsync(basicData);
-            if (!basicResult.success) {
-                throw new Error('기본정보 검증 실패');
+            if (user && user.provider !== 'local') {
+            await authService.completeSocialOnboarding({
+                studentId: Number(academicData.studentId),
+                major: academicData.major,
+                grade: Number(academicData.grade.replace('학년', '')),
+                semester: 2,
+                phone: undefined,
+                enrollmentYear: Number(academicData.enrollmentYear),
+                graduationYear: Number(academicData.graduationYear)
+            });
+
+            showNotification({ type: 'success', message: '학사정보 등록 성공!' });
+            navigate('/dashboard');
+            return;
             }
 
-            // 학사정보 검증
-            const academicResult = await academicInfoSchema.safeParseAsync(academicData);
-            if (!academicResult.success) {
-                throw new Error('학사정보 검증 실패');
-            }
-
-            // 전화번호 검증 확인
-            if (!phoneVerified) {
-                throw new Error('전화번호 인증이 완료되지 않았습니다');
-            }
-
-            // 회원가입 API 호출 (AuthContext에서 학년 변환 처리)
             await authRegister(
                 basicData.name,
                 basicData.email,
                 basicData.password,
                 Number(academicData.studentId),
                 academicData.major,
-                academicData.grade,
+                Number(academicData.grade.replace('학년', '')),
                 basicData.phone,
                 academicData.interests,
                 Number(academicData.enrollmentYear),
                 Number(academicData.graduationYear)
             );
 
-            // 프로필 정보는 AuthContext에서 자동으로 초기화됨
-            // useData를 통해 관리되므로 별도 저장 불필요
-
-            showNotification({
-                type: 'success',
-                message: '회원가입 성공'
-            });
-
-            // 폼 초기화
-            basicInfoForm.reset();
-            academicInfoForm.reset();
-            setPhoneVerified(false);
-            setStep(0);
-
-            // 로그인 페이지로 이동
-            setTimeout(() => {
-                navigate('/login');
-            }, 2000);
-
-        } catch (error: any) {
-            console.error('회원가입 실패:', error);
-
-            // 백엔드에서 구조화된 에러 응답 처리
-            let message = '회원가입에 실패했습니다. 다시 시도해주세요.';
-            const severity: 'error' | 'warning' | 'info' | 'success' = 'error';
-
-            if (error?.response?.data) {
-                const errorData = error.response.data;
-
-                // 백엔드에서 제공하는 구조화된 에러 처리
-                if (errorData.success === false) {
-                    message = errorData.error || message;
-
-                    // 에러 타입별로 다른 처리
-                    switch (errorData.errorType) {
-                        case 'email_duplicate':
-                            message = '이미 존재하는 이메일입니다.';
-                            break;
-                        case 'password_invalid':
-                            message = '비밀번호는 6자 이상이어야 합니다.';
-                            break;
-                        case 'email_invalid':
-                            message = '올바른 이메일 형식을 입력해주세요.';
-                            break;
-                        case 'required_field':
-                            message = '필수 정보를 모두 입력해주세요.';
-                            break;
-                        default:
-                            message = errorData.error || message;
-                    }
-                }
-            } else {
-                // 기존 에러 처리 로직 (fallback)
-                if (error?.message) {
-                    if (error.message.includes('이미 사용 중인 학번')) {
-                        message = '이미 사용 중인 학번입니다.';
-                    } else if (error.message.includes('이미 존재하는 이메일')) {
-                        message = '이미 존재하는 이메일입니다.';
-                    } else if (error.message.includes('already exist') || error.message.includes('User already exists') || error.message.includes('이미 등록')) {
-                        message = '이미 등록된 정보입니다.';
-                    } else if (error.message.includes('Validation error')) {
-                        message = '입력 정보에 오류가 있습니다.';
-                    } else if (error.message.includes('Network Error') || error.message.includes('fetch')) {
-                        message = '네트워크 오류가 발생했습니다.';
-                    } else {
-                        message = error.message;
-                    }
-                }
-            }
-
-            showNotification({
-                type: severity,
-                message
-            });
+            showNotification({ type: 'success', message: '회원가입 성공' });
+            navigate('/login');
+        } catch (err) {
+            console.error('회원가입 실패:', err);
+            showNotification({ type: 'error', message: '회원가입에 실패했습니다.' });
         } finally {
             setIsLoading(false);
         }
@@ -1360,7 +1297,7 @@ const Register: React.FC = () => {
                                             </Button>
                                             <GradientButton
                                                 fullWidth
-                                                onClick={basicInfoForm.handleSubmit(handleRegister)}
+                                                onClick={academicInfoForm.handleSubmit(handleRegister)}
                                                 disabled={isLoading || !academicInfoForm.formState.isValid}
                                                 sx={{
                                                     height: 56,

@@ -63,6 +63,7 @@ const SecurityTest = lazy(() => import('./pages/SecurityTest'));
 const CompletedCourses = lazy(() => import('./pages/CompletedCourses'));
 const CourseSetup = lazy(() => import('./pages/CourseSetup'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 
 // 스켈레톤 UI 컴포넌트
 const PageSkeleton = () => (
@@ -428,6 +429,7 @@ function AppContent() {
             <Route path="/" element={<Intro />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
@@ -483,6 +485,7 @@ function AppContent() {
                 <InterestSelection />
               </ProtectedRoute>
             } />
+            <Route path="/setup/academic" element={<Register startStep={1} />} />
           </Routes>
         </Suspense>
       </MainContent>

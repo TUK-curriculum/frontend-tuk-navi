@@ -264,6 +264,36 @@ export class AuthService {
             return null;
         }
     }
+
+    /**
+     * 소셜 로그인 사용자 학사정보 업데이트
+     */
+    async completeSocialOnboarding(data: {
+        studentId?: number;
+        major?: string;
+        grade?: number;
+        semester?: number;
+        phone?: string;
+        enrollmentYear?: number;
+        graduationYear?: number;
+    }): Promise<UserProfile> {
+        try {
+            const updatedProfile = await authRepository.updateProfile(data);
+
+            const storedUser = this.getStoredUser();
+            if (storedUser) {
+            const mergedUser = { ...storedUser, ...updatedProfile };
+            localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
+            }
+
+            return updatedProfile;
+        } catch (error) {
+            throw new ApiError(
+            ErrorCode.SERVER_ERROR,
+            '학사 정보 업데이트에 실패했습니다.'
+            );
+        }
+    }
 }
 
 // Export singleton instance

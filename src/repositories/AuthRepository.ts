@@ -99,6 +99,13 @@ export class AuthRepository {
         return response.data;
     }
 
+    async updateProfile(data: any): Promise<UserProfile> {
+        const res = await apiClient.put('/auth/account', data, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+        return res.data;
+    }
+
     async validateToken(token: string): Promise<boolean> {
         try {
             await apiClient.get(apiEndpoints.auth.profile, {
