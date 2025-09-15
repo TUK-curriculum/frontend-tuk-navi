@@ -47,6 +47,7 @@ import InterestSelection from './pages/InterestSelection';
 import { NotificationProvider } from './components/common/NotificationSystem';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 
 // Lazy load pages for code splitting
 const Intro = lazy(() => import('./pages/Intro'));
@@ -566,11 +567,13 @@ function App() {
         }}>
           <NotificationProvider>
             <AuthProvider>
-              <SeparatedDataProvider>
-                <SetupProvider>
-                  <AppContent />
-                </SetupProvider>
-              </SeparatedDataProvider>
+              <WebSocketProvider>
+                <SeparatedDataProvider>
+                  <SetupProvider>
+                    <AppContent />
+                  </SetupProvider>
+                </SeparatedDataProvider>
+              </WebSocketProvider>
             </AuthProvider>
           </NotificationProvider>
         </Box>

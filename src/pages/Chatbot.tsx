@@ -1,32 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Typography } from "@mui/material";
-import { useNavigate, useLocation } from "react-router-dom";
-import MessagesArea from "../components/common/MessagesArea";
-import InputBar from "../components/common/InputBar";
+import { Box, Typography, Alert, CircularProgress } from "@mui/material";
 import MessageBubble from "../components/common/Message";
 import mascot from '../assets/chatbot.png';
 import check from "../assets/check.png";
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import { chatService } from "../services/ChatService";
-
-// 사용자 정보 타입
-interface ChatbotUserProfile {
-    major: string;
-    grade: string;
-    credits: number;
-    interests: string[];
-    goals: string[];
-    currentSubjects: string[];
-}
-
-// WebSocket 메시지 타입
-interface WebSocketMessage {
-    type?: string;
-    sessionId?: number;
-    message?: string;
-    recommended_lectures?: string[];
-}
 
 // 기본 메시지 타입
 interface Message {
@@ -35,37 +13,35 @@ interface Message {
     timestamp?: string;
 }
 
-let socket: WebSocket | null = null;
-let messageQueue: string[] = [];
-
 interface ChatbotProps {
     isModal?: boolean;
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { user } = useAuth();
+    // WebSocket Context 사용
+    const { 
+        isConnected, 
+        connectionState, 
+        sessionId, 
+        messages: globalMessages, 
+        sendMessage, 
+        addMessage,
+        clearMessages 
+    } = useWebSocket();
     
-    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+    const [localMessages, setLocalMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isComposing = useRef<boolean>(false);
-    const reconnecting = useRef<boolean>(false);
-    const [sessionId, setSessionId] = useState<number | null>(null);
 
+    // 글로벌 메시지와 로컬 메시지 동기화
     useEffect(() => {
-        connectWebSocket();
-        return () => {
-            if (socket) {
-            socket.close();
-            socket = null;
-            }
-        };
-    }, []);
+        setLocalMessages(globalMessages);
+    }, [globalMessages]);
 
+    // 세션 ID가 변경되면 채팅 기록 로드
     useEffect(() => {
         const loadHistory = async () => {
             if (!sessionId) {
@@ -82,12 +58,16 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                 }));
                 
                 if (historyMessages.length === 0) {
-                    setMessages([{
+                    // 초기 메시지만 로컬에 추가
+                    const welcomeMessage: Message = {
                         sender: "assistant",
                         content: "안녕하세요! TUK NAVI입니다.\n\n개인화된 커리큘럼 추천을 도와드릴게요.\n커리큘럼 생성을 원하시면 언제든 말씀해주세요!"
-                    }]);
+                    };
+                    addMessage(welcomeMessage);
                 } else {
-                    setMessages(historyMessages);
+                    // 기존 메시지들을 글로벌 상태에 설정
+                    clearMessages();
+                    historyMessages.forEach(msg => addMessage(msg));
                 }
             } catch (err) {
                 console.error("채팅 기록 조회 실패:", err);
@@ -95,142 +75,22 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         };
 
         loadHistory();
-    }, [sessionId]);
+    }, [sessionId, addMessage, clearMessages]);
 
-    // WebSocket 연동 함수
-    const flushMessageQueue = (): void => {
-        while (messageQueue.length > 0 && socket?.readyState === WebSocket.OPEN) {
-            const msg = messageQueue.shift();
-            if (msg && socket) {
-                socket.send(msg);
-                console.log("[소켓 전송] 메시지:", msg);
-            }
-        }
-    };
-
-    const connectWebSocket = (): void => {
-        if (socket && socket.readyState !== WebSocket.CLOSED) return;
-
-        reconnecting.current = true;
-        
-        const token = localStorage.getItem("accessToken");
-        const url = token 
-            ? `ws://localhost:8000/ws?token=${token}`
-            : `ws://localhost:8000/ws`;
-
-        socket = new WebSocket(url);        
-        
-        socket.onopen = (): void => {
-            console.log("WebSocket 연결됨");
-            reconnecting.current = false;
-            flushMessageQueue();
-        };
-
-        socket.onmessage = (event: MessageEvent): void => {
-            const data: WebSocketMessage = JSON.parse(event.data);
-
-            if (data.type === "session" && data.sessionId) {
-                console.log("세션 ID 수신:", data.sessionId);
-                setSessionId(data.sessionId);
-                return; 
-            }
-            
-            console.log("WebSocket 메시지 수신:", event.data);
-            setLoading(false);
-            
-            try {
-                let messageData = event.data;
-                
-                // 유니코드 디코딩
-                if (typeof messageData === 'string' && messageData.includes('\\u')) {
-                    try {
-                        // JSON.parse로 파싱하여 유니코드 디코딩
-                        const parsed = JSON.parse(messageData);
-                        console.log("1차 파싱 완료:", parsed);
-                        
-                        // message 필드가 유니코드 이스케이프된 경우 추가 디코딩
-                        if (parsed.message && typeof parsed.message === 'string' && parsed.message.includes('\\u')) {
-                            try {
-                                parsed.message = JSON.parse(`"${parsed.message}"`);
-                                console.log("메시지 유니코드 디코딩 후:", parsed.message);
-                            } catch (e) {
-                                console.log("메시지 유니코드 디코딩 실패, 원본 사용");
-                            }
-                        }
-                        
-                        messageData = parsed;
-                    } catch (e) {
-                        console.log("JSON 파싱 실패:", e);
-                        // JSON 파싱이 실패하면 원본 그대로 사용
-                        messageData = JSON.parse(event.data);
-                    }
-                } else {
-                    // 일반적인 JSON 파싱
-                    messageData = JSON.parse(messageData);
-                }
-
-                const data: WebSocketMessage = messageData;
-                console.log("최종 파싱된 데이터:", data);
-                
-                if (data.message) {
-                    console.log("봇 메시지 추가:", data.message);
-                    setMessages(prev => {
-                        const newMessages = [...prev, { sender: "assistant" as const, content: data.message as string }];
-                        console.log("업데이트된 메시지들:", newMessages);
-                        return newMessages;
-                    });
-                } else if (data.recommended_lectures) {
-                    const lectures = data.recommended_lectures.join(", ");
-                    console.log("추천 강의 메시지 추가:", lectures);
-                    setMessages(prev => {
-                        const newMessages = [...prev, { sender: "assistant" as const, content: `추천 강의: ${lectures}` }];
-                        console.log("업데이트된 메시지들:", newMessages);
-                        return newMessages;
-                    });
-                } else {
-                    console.log("알 수 없는 메시지 형식:", data);
-                    const messageText = JSON.stringify(data);
-                    setMessages(prev => [...prev, { sender: "assistant" as const, content: messageText }]);
-                }
-            } catch (error) {
-                console.error("메시지 파싱 오류:", error);
-                console.error("원본 데이터:", event.data);
-                
-                // JSON 파싱이 실패하면 원본 텍스트 그대로 출력
-                if (typeof event.data === 'string') {
-                    setMessages(prev => [...prev, { sender: "assistant" as const, content: event.data }]);
-                }
-            }
-        };
-
-        socket.onclose = (): void => {
-            console.log("WebSocket 연결 끊김. 재연결 시도");
-            setTimeout(connectWebSocket, 500);
-        };
-
-        socket.onerror = (error: Event): void => {
-            console.error("WebSocket 에러:", error);
-            socket?.close();
-        };
-    };
-
-    const sendMessage = async (): Promise<void> => {
+    // 메시지 전송 핸들러
+    const handleSendMessage = async (): Promise<void> => {
         if (!input.trim()) return;
 
         const userMessage = input;
-        setMessages(prev => [...prev, { sender: "user", content: userMessage }]);
         setInput("");
-        
-        // 로딩 상태 추가 
         setLoading(true);
 
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(userMessage);
-            console.log("[소켓 전송] 메시지:", userMessage);
-        } else {
-            console.warn("소켓 연결 중이거나 끊김 상태. 큐에 저장함.");
-            messageQueue.push(userMessage);
-            if (!reconnecting.current) connectWebSocket();
+        try {
+            await sendMessage(userMessage);
+        } catch (error) {
+            console.error("메시지 전송 실패:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -238,7 +98,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
         if (e.key === "Enter" && !isComposing.current) {
             e.preventDefault();
-            sendMessage();
+            handleSendMessage();
         }
     };
 
@@ -254,14 +114,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         setInput(e.target.value);
     };
 
-    const handleSend = (): void => {
-        sendMessage();
-    };
-
     // 메시지 변경 시 스크롤 하단으로 이동
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+    }, [localMessages]);
 
     const renderMessage = (msg: Message, idx: number): React.ReactNode => {
         if (msg.sender === "assistant") {
@@ -328,7 +184,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                     <img 
                                         src={check} 
                                         alt="조건 확인" 
-                                        onClick={() => {
+                                        onClick={async () => {
                                             if (selectedConditions.length === 0) {
                                                 alert('최소 하나의 조건을 선택해주세요.');
                                                 return;
@@ -337,23 +193,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                             // 선택된 조건들을 서버로 전송
                                             const conditionsText = selectedConditions.join(", ");
                                             
-                                            // 사용자 메시지로 선택 결과 추가
-                                            setMessages(prev => [...prev, { 
-                                                sender: "user", 
-                                                content: `선택한 조건: ${conditionsText}` 
-                                            }]);
-                                            
-                                            // WebSocket으로 전송
-                                            if (socket && socket.readyState === WebSocket.OPEN) {
-                                                socket.send(conditionsText);
-                                                console.log("[조건 선택 전송]:", conditionsText);
-                                            } else {
-                                                messageQueue.push(conditionsText);
-                                                if (!reconnecting.current) connectWebSocket();
+                                            try {
+                                                await sendMessage(conditionsText);
+                                                setSelectedConditions([]);
+                                            } catch (error) {
+                                                console.error("조건 전송 실패:", error);
                                             }
-                                            
-                                            // 선택된 조건 초기화 
-                                            setSelectedConditions([]);
                                         }}
                                         style={{ 
                                             width: '32px', 
@@ -400,6 +245,28 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         }
     };
 
+    // 연결 상태 표시
+    const renderConnectionStatus = () => {
+        if (connectionState === 'connecting') {
+            return (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    <CircularProgress size={16} sx={{ mr: 1 }} />
+                    연결 중...
+                </Alert>
+            );
+        }
+        
+        if (connectionState === 'error' || !isConnected) {
+            return (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    연결이 끊어졌습니다. 자동으로 재연결을 시도합니다.
+                </Alert>
+            );
+        }
+
+        return null;
+    };
+
     return (
         <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f8fafc' }}>
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -419,7 +286,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         margin: '55px auto 0 auto',
                     }}
                 >
-                    {/* 상단 바 - 서비스스러운 디자인 */}
+                    {/* 상단 바 */}
                     <Box
                         sx={{
                             width: '100%',
@@ -440,7 +307,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mr: 2 }}>
                             <Box sx={{
                                 width: 14, height: 14, borderRadius: '50%',
-                                background: '#ff5f56', border: '1.5px solid #e0443e'
+                                background: isConnected ? '#27c93f' : '#ff5f56', 
+                                border: '1.5px solid #e0443e'
                             }} />
                             <Box sx={{
                                 width: 14, height: 14, borderRadius: '50%',
@@ -451,7 +319,6 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 background: '#27c93f', border: '1.5px solid #13a10e'
                             }} />
                         </Box>
-                        {/* 마스코트/서비스명/부제목 */}
                         <img
                             src={mascot}
                             alt="AI 마스코트"
@@ -467,12 +334,17 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         />
                         <Box>
                             <Typography variant="h6" fontWeight={900} sx={{ color: '#22223b', mb: 0.2 }}>
-                                TUK NAVI
+                                TUK NAVI {isConnected ? '' : '(연결 끊김)'}
                             </Typography>
                             <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
                                 AI가 분석하여 개인화된 커리큘럼과 시간표를 추천해드립니다!
                             </Typography>
                         </Box>
+                    </Box>
+
+                    {/* 연결 상태 표시 */}
+                    <Box sx={{ px: 2, pt: 1 }}>
+                        {renderConnectionStatus()}
                     </Box>
 
                     {/* 메시지 영역 */}
@@ -493,7 +365,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                             },
                         }}
                     >
-                        {messages.map((msg, idx) => renderMessage(msg, idx))}
+                        {localMessages.map((msg, idx) => renderMessage(msg, idx))}
+                        {loading && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                                <CircularProgress size={24} />
+                            </Box>
+                        )}
                         <div ref={messagesEndRef} />
                     </Box>
 
@@ -517,12 +394,13 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 outline: 'none',
                                 background: '#f5f5f5',
                             }}
-                            placeholder="메시지를 입력하세요"
+                            placeholder={isConnected ? "메시지를 입력하세요" : "연결 중..."}
                             value={input}
                             onChange={handleInputChange}
                             onKeyDown={handleKeyDown}
                             onCompositionStart={handleCompositionStart}
                             onCompositionEnd={handleCompositionEnd}
+                            disabled={!isConnected || loading}
                         />
                         <button
                             style={{
@@ -530,12 +408,14 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 background: 'none',
                                 border: 'none',
                                 padding: 0,
-                                cursor: 'pointer',
+                                cursor: isConnected && !loading ? 'pointer' : 'not-allowed',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
+                                opacity: isConnected && !loading ? 1 : 0.5,
                             }}
-                            onClick={handleSend}
+                            onClick={handleSendMessage}
+                            disabled={!isConnected || loading}
                         >
                             <Typography sx={{ color: '#0066cc', fontWeight: 600 }}>전송</Typography>
                         </button>
