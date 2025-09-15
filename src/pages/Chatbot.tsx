@@ -126,7 +126,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
             
             if (isConditionMessage) {
                 // 조건 추출
-                const conditions = ["졸업", "재수강", "선호 교수", "팀플 제외"];
+                const conditions = ["졸업", "선호 교수", "팀플 제외"];
                 
                 return (
                     <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
