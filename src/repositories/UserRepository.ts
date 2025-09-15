@@ -1,221 +1,119 @@
-1
 import { BaseRepository, PaginatedResponse, QueryOptions } from './BaseRepository';
-2
 import apiClient from '../config/apiClient';
-3
 import { UserData, UserProfile, UserSettings } from '../types/user';
-4​
-5
+
 export interface UserProfileUpdate {
-6
- username?: string;
-7
- phone?: string;
-8
- major?: string;
-9
+    username?: string;
+    phone?: string;
+    major?: string;
 }
-10​
-11
+
 export interface UserProfileResponse {
-12
- success: boolean;
-13
- message: string;
-14
- data: UserProfile;
-15
+    success: boolean;
+    message: string;
+    data: UserProfile;
 }
-16​
-17
+
 export interface UserUpdateDTO {
-18
- name?: string;
-19
- email?: string;
-20
- password?: string;
-21
- studentId?: number;
-22
- major?: string;
-23
- grade?: number;
-24
- semester?: number;
-25
- phone?: string;
-26
- nickname?: string;
-27
- interests?: string[];
-28
- avatar?: string;
-29
+    name?: string;
+    email?: string;
+    password?: string;
+    studentId?: number;
+    major?: string;
+    grade?: number;
+    semester?: number;
+    phone?: string;
+    nickname?: string;
+    interests?: string[];
+    avatar?: string;
 }
-30​
-31
+
 export interface UserCreateDTO {
-32
- name: string;
-33
- email: string;
-34
- password: string;
-35
- studentId: number;
-36
- major?: string;
-37
- grade?: number;
-38
- semester?: number;
-39
- phone?: string;
-40
- nickname?: string;
-41
- interests?: string[];
-42
- avatar?: string;
-43
+    name: string;
+    email: string;
+    password: string;
+    studentId: number;
+    major?: string;
+    grade?: number;
+    semester?: number;
+    phone?: string;
+    nickname?: string;
+    interests?: string[];
+    avatar?: string;
 }
-44​
-45​
-46
+
+
 class UserRepository extends BaseRepository<UserProfile> {
-47
- protected endpoint = '/users';
-48​
-49
- private static instance: UserRepository;
-50​
-51
- public static getInstance(): UserRepository {
-52
- if (!UserRepository.instance) {
-53
- UserRepository.instance = new UserRepository();
-54
- }
-55
- return UserRepository.instance;
-56
- }
-57​
-58
- async findAll(options?: QueryOptions): Promise<UserProfile[]> {
-59
- const queryString = this.buildQueryString(options);
-60
- const response = await apiClient.get<PaginatedResponse<UserProfile>>(`${this.endpoint}${queryString}`);
-61
- return response.data.data;
-62
- }
-63​
-64
- async findById(id: number): Promise<UserProfile | null> {
-65
- try {
-66
- const response = await apiClient.get<UserProfileResponse>('/profile');
-67
- console.log('[UserRepository] Profile fetched successfully:', response.data);
-68
- return response.data.data; // unwrap ApiResponse
-69
- } catch (error) {
-70
- console.error('[UserRepository] Failed to fetch profile:', error);
-71
- throw error;
-72
- }
-73
- }
-74​
-75
- async create(data: UserCreateDTO): Promise<UserProfile> {
-76
- const response = await apiClient.post<UserProfileResponse>(this.endpoint, data);
-77
- return response.data.data;
-78
- }
-79​
-80
- async update(id: number, data: UserUpdateDTO): Promise<UserProfile> {
-81
- const response = await apiClient.put<UserProfileResponse>(`${this.endpoint}/${id}`, data);
-82
- return response.data.data;
-83
- }
-84​
-85
- async delete(id: number): Promise<boolean> {
-86
- await apiClient.delete(`${this.endpoint}/${id}`);
-87
- return true;
-88
- }
-89​
-90
- async getProfile(): Promise<UserProfile | null> {
-91
- try {
-92
- const response = await apiClient.get<UserProfileResponse>('/profile');
-93
- console.log('[UserRepository] Profile fetched successfully:', response.data);
-94
- return response.data.data; // unwrap ApiResponse
-95
- } catch (error) {
-96
- console.error('[UserRepository] Failed to fetch profile:', error);
-97
- throw error;
-98
- }
-99
- }
-100​
-101
- async updateProfile(data: UserUpdateDTO): Promise<UserProfile> {
-102
- const response = await apiClient.put<UserProfileResponse>('/profile', data);
-103
- return response.data.data;
-104
- }
-105​
-106
- async updateSettings(settings: UserSettings): Promise<UserSettings> {
-107
- const response = await apiClient.put('/profile/settings', settings);
-108
- return response.data.data;
-109
- }
-110​
-111
- async getSettings(): Promise<UserSettings> {
-112
- const response = await apiClient.get('/profile/settings');
-113
- return response.data.data;
-114
- }
-115
+    protected endpoint = '/users';
+
+    private static instance: UserRepository;
+
+    public static getInstance(): UserRepository {
+        if (!UserRepository.instance) {
+            UserRepository.instance = new UserRepository();
+        }
+        return UserRepository.instance;
+    }
+
+    async findAll(options?: QueryOptions): Promise<UserProfile[]> {
+        const queryString = this.buildQueryString(options);
+        const response = await apiClient.get<PaginatedResponse<UserProfile>>(`${this.endpoint}${queryString}`);
+        return response.data.data;
+    }
+
+    async findById(id: number): Promise<UserProfile | null> {
+        try {
+        const response = await apiClient.get<UserProfileResponse>(`${this.endpoint}/${id}`);
+        return response.data.data;
+        } catch {
+        return null;
+        }
+    }
+
+    async create(data: Partial<UserProfile>): Promise<UserProfile> {
+        const response = await apiClient.post<UserProfileResponse>(this.endpoint, data);
+        return response.data.data;
+    }
+
+    async update(id: number, data: Partial<UserProfile>): Promise<UserProfile> {
+        const response = await apiClient.put<UserProfileResponse>(`${this.endpoint}/${id}`, data);
+        return response.data.data;
+    }
+
+    async delete(id: number): Promise<boolean> {
+        await apiClient.delete(`${this.endpoint}/${id}`);
+        return true;
+    }
+
+    async getProfile(): Promise<UserProfile> {
+        const response = await apiClient.get<UserProfileResponse>('/profile');
+        return response.data.data;
+    }
+
+    async updateProfile(updates: UserProfileUpdate): Promise<UserProfile> {
+        const response = await apiClient.put<UserProfileResponse>('/profile', updates);
+        return response.data.data;
+    }
+
+    async getAccount(): Promise<any> {
+        const response = await apiClient.get('/auth/account');
+        return response.data;
+    }
+
+    async findByEmail(email: string): Promise<UserProfile | null> {
+        const queryString = this.buildQueryString({ filter: { email } });
+        const response = await apiClient.get<PaginatedResponse<UserProfile>>(`${this.endpoint}${queryString}`);
+        return response.data.data[0] ?? null;
+    }
+
+    async getUserData(id: number): Promise<UserData> {
+        const response = await apiClient.get<UserData>(`${this.endpoint}/${id}/data`);
+        return response.data;
+    }
+
+    async updateSettings(id: number, settings: Partial<UserSettings>): Promise<void> {
+        await apiClient.put(`${this.endpoint}/${id}/settings`, settings);
+    }
 }
-116​
-117
-export const userRepository = UserRepository.getInstance();
-118
-export default userRepository;
-119​
-120
-export { UserRepository };
+
+export const userRepository = UserRepository.getInstance(); 
