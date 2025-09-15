@@ -20,6 +20,7 @@ import {
 import { Update, Delete, SchoolOutlined, Warning } from '@mui/icons-material';
 import { curriculumService } from '../../services/CurriculumService';
 import { CurriculumLecture } from '../../types/curriculum';
+import { apiClient } from '@/utils/apiClient';
 
 interface LectureStatusModalProps {
     open: boolean;
@@ -103,6 +104,9 @@ const LectureStatusModal: React.FC<LectureStatusModalProps> = ({
         courseCode: '',
         courseName: ''
     });
+    const [prerequisites, setPrerequisites] = useState<string[]>([]);
+    const [requiredKnowledge, setRequiredKnowledge] = useState<string[]>([]);
+
 
     useEffect(() => {
         if (lecture) {
@@ -111,6 +115,24 @@ const LectureStatusModal: React.FC<LectureStatusModalProps> = ({
             setRecordGrade('');
         }
     }, [lecture]);
+
+    useEffect(() => {
+        const fetchPrerequisites = async () => {
+            if (!lecture?.lectureCode?.code) {
+                return;
+            }
+            
+            try {
+                const data = await apiClient.lectures.getPrerequisitesAndKnowledge(lecture.lectureCode.code);
+                setPrerequisites(data.prerequisites || []);
+                setRequiredKnowledge(data.requiredKnowledge || []);
+            } catch (error) {
+                console.error('선이수 과목 조회 실패:', error);
+            }
+        };
+
+        fetchPrerequisites();
+    }, [lecture?.lectureCode?.code]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -272,7 +294,7 @@ const LectureStatusModal: React.FC<LectureStatusModalProps> = ({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Update color="primary" />
                             <Typography variant="h6">
-                                강의 수정
+                                강의 이수 내역
                             </Typography>
                         </Box>
                     </DialogTitle>
@@ -327,6 +349,28 @@ const LectureStatusModal: React.FC<LectureStatusModalProps> = ({
                                             {lecture.grade}학년 {lecture.semester}학기
                                         </Typography>
                                     </Grid>
+                                    {prerequisites.length > 0 && (
+                                        <Grid item xs={12}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                선이수 과목
+                                            </Typography>
+                                            <Typography variant="body1">
+                                                {prerequisites.join(', ')}
+                                            </Typography>
+                                        </Grid>
+                                    )}
+                                    
+                                    {/* 필요 지식 */}
+                                    {requiredKnowledge.length > 0 && (
+                                        <Grid item xs={12}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                필요 지식
+                                            </Typography>
+                                            <Typography variant="body1">
+                                                {requiredKnowledge.join(', ')}
+                                            </Typography>
+                                        </Grid>
+                                    )}
                                 </Grid>
                             </Box>
 

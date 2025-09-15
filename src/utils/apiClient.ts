@@ -417,6 +417,16 @@ export const apiClient = {
 
             return handleResponse(response);
         },
+
+        // 선이수 과목 및 필요 지식 조회 
+        getPrerequisitesAndKnowledge: async (lectureCode: string) => {
+            const response = await fetch(`${API_BASE_URL}/lectures/${lectureCode}/prerequisites`, {
+                method: 'GET',
+                headers: createHeaders(),
+            });
+
+            return handleResponse(response);
+        },
     },
 
     // 강의 정보 관련 API
