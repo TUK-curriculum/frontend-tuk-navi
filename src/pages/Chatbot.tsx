@@ -11,6 +11,14 @@ interface Message {
     sender: "user" | "assistant";
     content: string;
     timestamp?: string;
+    retake_candidates?: Array<{
+        code: string;
+        name: string;
+        credit: number;
+        grade: string;
+        semester?: string;
+        type?: string;
+    }>;
 }
 
 interface ChatbotProps {
@@ -32,6 +40,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     const [input, setInput] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+    const [selectedRetakes, setSelectedRetakes] = useState<string[]>([]);
     const [localMessages, setLocalMessages] = useState<Message[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isComposing = useRef<boolean>(false);
@@ -124,12 +133,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
             // 조건 선택 메시지인지 확인
             const isConditionMessage = msg.content.includes("조건을 모두 선택해 주세요") || msg.content.includes("조건:");
             
+            // 재수강 목록 메시지인지 확인
+            const isRetakeMessage = msg.content.includes("재수강") && msg.retake_candidates;
+            
             if (isConditionMessage) {
                 // 조건 추출
-                const conditions = ["졸업", "선호 교수", "팀플 제외"];
+                const conditions = ["졸업", "재수강", "선호 교수", "팀플 제외"];
                 
                 return (
-                    <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
+                    <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                         <img
                             src={mascot}
                             alt="tino"
@@ -148,7 +160,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                                 <div>관심 분야 외의 과목은 아래 조건으로 설계됩니다.</div>
                             </div>
                             
-                            <Box sx={{ mb: 2 }}>
+                            <Box sx={{ mb: 1 }}>
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                                     {conditions.map((condition) => (
                                         <button
@@ -211,10 +223,109 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                         </MessageBubble>
                     </Box>
                 );
+            } else if (isRetakeMessage) {
+                // 재수강 목록 메시지
+                return (
+                    <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+                        <img
+                            src={mascot}
+                            alt="tino"
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                marginTop: 4,
+                            }}
+                        />
+                        <MessageBubble from="ai">
+                            <div style={{ marginBottom: '16px' }}>
+                                <div>{msg.content}</div>
+                            </div>
+                            
+                            {msg.retake_candidates && msg.retake_candidates.length > 0 && (
+                                <Box sx={{ mb: 1 }}>
+                                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                                        재수강 가능한 과목들:
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                                        {msg.retake_candidates.map((candidate, index) => (
+                                            <button
+                                                key={`${candidate.code}-${index}`}
+                                                onClick={() => {
+                                                    setSelectedRetakes(prev => 
+                                                        prev.includes(candidate.code) 
+                                                            ? prev.filter(c => c !== candidate.code)
+                                                            : [...prev, candidate.code]
+                                                    );
+                                                }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    borderRadius: '16px',
+                                                    border: selectedRetakes.includes(candidate.code) 
+                                                        ? '2px solid #1976d2' 
+                                                        : '2px solid #e0e0e0',
+                                                    backgroundColor: selectedRetakes.includes(candidate.code) 
+                                                        ? '#e3f2fd' 
+                                                        : '#ffffff',
+                                                    color: selectedRetakes.includes(candidate.code) 
+                                                        ? '#1976d2' 
+                                                        : '#666666',
+                                                    cursor: 'pointer',
+                                                    fontSize: '12px',
+                                                    fontWeight: selectedRetakes.includes(candidate.code) ? '600' : '400',
+                                                    transition: 'all 0.2s ease',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    textAlign: 'center',
+                                                    minWidth: '120px',
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 'bold' }}>{candidate.name}</div>
+                                                <div style={{ fontSize: '10px', opacity: 0.7 }}>
+                                                    {candidate.code} ({candidate.credit}학점)
+                                                </div>
+                                                <div style={{ fontSize: '10px', opacity: 0.7 }}>
+                                                    성적: {candidate.grade}
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </Box>
+                                    
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography variant="caption" sx={{ color: '#666' }}>
+                                            선택된 과목: {selectedRetakes.length}개
+                                        </Typography>
+                                        <img 
+                                            src={check} 
+                                            alt="재수강 과목 확인" 
+                                            onClick={async () => {
+                                                try {
+                                                    // 선택된 재수강 과목들을 JSON 형태로 전송
+                                                    const selectedData = JSON.stringify(selectedRetakes);
+                                                    await sendMessage(selectedData);
+                                                    setSelectedRetakes([]);
+                                                } catch (error) {
+                                                    console.error("재수강 과목 전송 실패:", error);
+                                                }
+                                            }}
+                                            style={{ 
+                                                width: '24px', 
+                                                height: '24px',
+                                                cursor: 'pointer'
+                                            }} 
+                                        />
+                                    </Box>
+                                </Box>
+                            )}
+                        </MessageBubble>
+                    </Box>
+                );
             } else {
                 // 일반 봇 메시지
                 return (
-                    <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 2 }}>
+                    <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
                         <img
                             src={mascot}
                             alt="tino"
@@ -249,7 +360,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
     const renderConnectionStatus = () => {
         if (connectionState === 'connecting') {
             return (
-                <Alert severity="info" sx={{ mb: 2 }}>
+                <Alert severity="info" sx={{ mb: 1 }}>
                     <CircularProgress size={16} sx={{ mr: 1 }} />
                     연결 중...
                 </Alert>
@@ -258,13 +369,26 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
         
         if (connectionState === 'error' || !isConnected) {
             return (
-                <Alert severity="warning" sx={{ mb: 2 }}>
+                <Alert severity="warning" sx={{ mb: 1 }}>
                     연결이 끊어졌습니다. 자동으로 재연결을 시도합니다.
                 </Alert>
             );
         }
 
         return null;
+    };
+
+    // Message 변환 함수
+    const normalizeMessage = (raw: any): Message => {
+        if ((raw as Message).sender) {
+            return raw as Message; // 이미 맞는 형태라면 그대로
+        }
+        return {
+            sender: "assistant",
+            content: raw.message || "",
+            timestamp: raw.timestamp,
+            retake_candidates: raw.retake_candidates
+        };
     };
 
     return (
@@ -365,7 +489,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ isModal }) => {
                             },
                         }}
                     >
-                        {localMessages.map((msg, idx) => renderMessage(msg, idx))}
+                        {localMessages.map((rawMsg, idx) => {
+                            const msg = normalizeMessage(rawMsg);
+                            return renderMessage(msg, idx);
+                        })}
                         {loading && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
                                 <CircularProgress size={24} />

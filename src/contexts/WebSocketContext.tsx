@@ -7,6 +7,14 @@ interface WebSocketMessage {
     sessionId?: number;
     message?: string;
     recommended_lectures?: string[];
+    retake_candidates?: Array<{
+        code: string;
+        name: string;
+        credit: number;
+        grade: string;
+        semester?: string;
+        type?: string;
+    }>;
 }
 
 // 기본 메시지 타입
@@ -14,6 +22,14 @@ interface Message {
     sender: "user" | "assistant";
     content: string;
     timestamp?: string;
+    retake_candidates?: Array<{
+        code: string;
+        name: string;
+        credit: number;
+        grade: string;
+        semester?: string;
+        type?: string;
+    }>;
 }
 
 interface WebSocketContextType {
@@ -110,8 +126,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
                     const newMessage: Message = {
                         sender: "assistant",
                         content: data.message,
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        retake_candidates: data.retake_candidates || []
                     };
+                    
+                    // 재수강 후보 데이터가 있으면 포함
+                    if (data.retake_candidates && Array.isArray(data.retake_candidates)) {
+                        newMessage.retake_candidates = data.retake_candidates;
+                        console.log('[WebSocket] 재수강 후보 데이터 수신:', data.retake_candidates);
+                    }
+                    
                     setMessages(prev => [...prev, newMessage]);
                 } else if (data.recommended_lectures) {
                     const lectures = data.recommended_lectures.join(", ");
@@ -178,7 +202,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         }
     }, [socket, isConnected, isAuthenticated, connectWebSocket]);
 
-    // 메시지 추가 함수 (외부에서 직접 추가할 때)
+    // 메시지 추가 함수
     const addMessage = React.useCallback((message: Message) => {
         setMessages(prev => [...prev, message]);
     }, []);
@@ -230,10 +254,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 console.log('[WebSocket] 페이지 숨김 - 연결 유지');
-                // 페이지가 숨겨져도 연결을 유지 (백그라운드 알림 등을 위해)
             } else {
                 console.log('[WebSocket] 페이지 표시');
-                // 페이지가 다시 표시되었을 때 연결 상태 확인
                 if (isAuthenticated && !isConnected) {
                     connectWebSocket();
                 }
