@@ -65,6 +65,7 @@ const CompletedCourses = lazy(() => import('./pages/CompletedCourses'));
 const CourseSetup = lazy(() => import('./pages/CourseSetup'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const DataManagement = lazy(() => import('./pages/DataManagement'));
 
 // 스켈레톤 UI 컴포넌트
 const PageSkeleton = () => (
@@ -273,6 +274,24 @@ function AppBarNav({ onOpenOnboarding, onOpenAccountSettings }: { onOpenOnboardi
               disabled={isPending}
             >
               사용자관리
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              startIcon={<SchoolIcon sx={{ fontSize: 20 }} />}
+              sx={{
+                color: isActive('/data-management') ? 'text.primary' : 'text.secondary',
+                fontWeight: isActive('/data-management') ? 700 : 600,
+                bgcolor: isActive('/data-management') ? 'primary.50' : 'transparent',
+                px: 2,
+                borderRadius: 2,
+                '&:hover': { bgcolor: 'primary.50' },
+                transition: 'all 0.2s ease-in-out'
+              }}
+              onClick={() => handleNavigation('/data-management')}
+              disabled={isPending}
+            >
+              데이터관리
             </Button>
           )}
           {isAdmin && (
@@ -505,6 +524,11 @@ function AppContent() {
             <Route path="/courses" element={
               <ProtectedRoute>
                 <CourseDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/data-management" element={
+              <ProtectedRoute>
+                <DataManagement />
               </ProtectedRoute>
             } />
             <Route path="/setup/academic" element={<Register startStep={1} />} />
