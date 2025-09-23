@@ -604,6 +604,56 @@ export const apiClient = {
         return handleResponse(response);
         },
     },
+
+    // 데이터 관리 관련 API
+    dataManagement: {
+        // 졸업 요건 관리
+        graduationRequirements: {
+            getAll: async () => {
+                const response = await fetch(`${API_BASE_URL}/graduation-requirements`, {
+                    method: 'GET',
+                    headers: createHeaders(),
+                });
+                const json = await handleResponse(response);
+                return json.data;
+            },
+            create: async (requirement: {
+                entry_year_start: number;
+                entry_year_end?: number;
+                total_credits: number;
+                liberal_arts: number;
+                major: number;
+            }) => {
+                const response = await fetch(`${API_BASE_URL}/graduation-requirements`, {
+                    method: 'POST',
+                    headers: createHeaders(),
+                    body: JSON.stringify(requirement),
+                });
+                return handleResponse(response);
+            },
+            update: async (id: number, updates: Partial<{
+                entry_year_start: number;
+                entry_year_end?: number;
+                total_credits: number;
+                liberal_arts: number;
+                major: number;
+            }>) => {
+                const response = await fetch(`${API_BASE_URL}/graduation-requirements/${id}`, {
+                    method: 'PATCH',
+                    headers: createHeaders(),
+                    body: JSON.stringify(updates),
+                });
+                return handleResponse(response);
+            },
+            delete: async (id: number) => {
+                const response = await fetch(`${API_BASE_URL}/graduation-requirements/${id}`, {
+                    method: 'DELETE',
+                    headers: createHeaders(),
+                });
+                return handleResponse(response);
+            },
+        },
+    },
 };
 
 // 토큰 갱신 함수
