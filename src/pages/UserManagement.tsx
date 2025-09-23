@@ -57,6 +57,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/SeparatedDataContext';
+import { userService } from '../services/UserService';
+import { UserProfile } from '../types/user';
 
 interface User {
     id: number;
@@ -103,28 +105,39 @@ const UserManagement: React.FC = () => {
         adminUsers: 0
     });
 
-    // 사용자 데이터 로드 (현재는 현재 사용자만 표시)
+    // 사용자 데이터 로드
     useEffect(() => {
-        if (user) {
-            const currentUser: User = {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: 'user' as const,
-                status: 'active' as const,
-                lastLogin: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-            };
-            setUsers([currentUser]);
-            setFilteredUsers([currentUser]);
-            setStats({
-                totalUsers: 1,
-                activeUsers: 1,
-                newUsersThisMonth: 1,
-                adminUsers: 0
-            });
-        }
-    }, [user]);
+        const fetchUsers = async () => {
+            try {
+                const data = await userService.getAllUsers(); // 이미 flat User[]
+                
+                const mapped = data.map((u) =>
+                    u.email === 'test@tukorea.ac.kr'
+                        ? { ...u, role: 'admin' as const, status: 'active' as const }
+                        : u
+                );
+
+                setUsers(mapped);
+                setFilteredUsers(mapped);
+
+                setStats({
+                    totalUsers: mapped.length,
+                    activeUsers: mapped.filter(u => u.status === 'active').length,
+                    newUsersThisMonth: mapped.filter(u => {
+                        const created = new Date(u.createdAt);
+                        const now = new Date();
+                        return created.getMonth() === now.getMonth() &&
+                            created.getFullYear() === now.getFullYear();
+                    }).length,
+                    adminUsers: mapped.filter(u => u.role === 'admin').length,
+                });
+            } catch (err) {
+                console.error('사용자 목록 조회 실패:', err);
+                setSnackbar({ open: true, message: '사용자 목록을 불러올 수 없습니다.', severity: 'error' });
+            }
+        };
+        fetchUsers();
+    }, []);
 
     // 검색 및 필터링
     useEffect(() => {
@@ -162,31 +175,34 @@ const UserManagement: React.FC = () => {
         setDeleteDialogOpen(true);
     };
 
-    const handleSaveUser = (updatedUser: User) => {
-        // 현재는 현재 사용자만 수정 가능
-        if (updatedUser.email === user?.email) {
-            setUsers([updatedUser]);
-            setFilteredUsers([updatedUser]);
+    const handleSaveUser = async (updatedUser: User) => {
+        try {
+            await userService.updateUser(updatedUser.id, updatedUser);
+            setSnackbar({ open: true, message: '사용자 정보가 수정되었습니다.', severity: 'success' });
+
+            const data = await userService.getAllUsers();
+            setUsers(data);
+            setFilteredUsers(data);
             setEditDialogOpen(false);
-            setSnackbar({
-                open: true,
-                message: '사용자 정보가 수정되었습니다.',
-                severity: 'success'
-            });
+        } catch (err) {
+            console.error('사용자 수정 실패:', err);
+            setSnackbar({ open: true, message: '사용자 수정 실패', severity: 'error' });
         }
     };
 
-    const handleConfirmDelete = () => {
-        if (selectedUser) {
-            // deleteUser(selectedUser.email); // 실제 삭제 로직 제거
-            setUsers([]); // 현재는 현재 사용자만 표시하므로 빈 배열로 변경
-            setFilteredUsers([]);
+    const handleConfirmDelete = async () => {
+        if (!selectedUser) return;
+        try {
+            await userService.deleteUser(selectedUser.id);
+            setSnackbar({ open: true, message: '사용자가 삭제되었습니다.', severity: 'success' });
+
+            const data = await userService.getAllUsers();
+            setUsers(data);
+            setFilteredUsers(data);
             setDeleteDialogOpen(false);
-            setSnackbar({
-                open: true,
-                message: '사용자가 삭제되었습니다.',
-                severity: 'success'
-            });
+        } catch (err) {
+            console.error('사용자 삭제 실패:', err);
+            setSnackbar({ open: true, message: '사용자 삭제 실패', severity: 'error' });
         }
     };
 
@@ -253,13 +269,6 @@ const UserManagement: React.FC = () => {
                                 시스템 사용자들을 관리하고 모니터링합니다.
                             </Typography>
                         </Box>
-                        <Button
-                            variant="contained"
-                            startIcon={<Add />}
-                            sx={{ borderRadius: 2, px: 3 }}
-                        >
-                            새 사용자 추가
-                        </Button>
                     </Box>
 
                     {/* 통계 카드 */}
@@ -514,7 +523,10 @@ const UserManagement: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label="이름"
-                                        defaultValue={selectedUser.name}
+                                        value={selectedUser?.name || ''}
+                                        onChange={(e) =>
+                                            setSelectedUser((prev) => prev ? { ...prev, name: e.target.value } : null)
+                                        }
                                         size="small"
                                     />
                                 </Grid>
@@ -522,16 +534,19 @@ const UserManagement: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label="이메일"
-                                        defaultValue={selectedUser.email}
+                                        value={selectedUser?.email || ''}
                                         size="small"
+                                        disabled
                                     />
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
                                     <FormControl fullWidth size="small">
                                         <InputLabel>역할</InputLabel>
                                         <Select
-                                            defaultValue={selectedUser.role}
-                                            label="역할"
+                                            value={selectedUser?.role || 'user'}
+                                            onChange={(e) =>
+                                                setSelectedUser((prev) => prev ? { ...prev, role: e.target.value as User['role'] } : null)
+                                            }
                                         >
                                             <MenuItem value="user">사용자</MenuItem>
                                             <MenuItem value="moderator">모더레이터</MenuItem>
@@ -543,8 +558,10 @@ const UserManagement: React.FC = () => {
                                     <FormControl fullWidth size="small">
                                         <InputLabel>상태</InputLabel>
                                         <Select
-                                            defaultValue={selectedUser.status}
-                                            label="상태"
+                                            value={selectedUser?.status || 'inactive'}
+                                            onChange={(e) =>
+                                                setSelectedUser((prev) => prev ? { ...prev, status: e.target.value as User['status'] } : null)
+                                            }
                                         >
                                             <MenuItem value="active">활성</MenuItem>
                                             <MenuItem value="inactive">비활성</MenuItem>
@@ -556,7 +573,10 @@ const UserManagement: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label="학과"
-                                        defaultValue={selectedUser.department}
+                                        value={selectedUser?.department || ''}
+                                        onChange={(e) =>
+                                            setSelectedUser((prev) => prev ? { ...prev, department: e.target.value } : null)
+                                        }
                                         size="small"
                                     />
                                 </Grid>

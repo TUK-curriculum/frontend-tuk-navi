@@ -10,10 +10,38 @@ export interface UserSearchParams {
     limit?: number;
 }
 
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: 'admin' | 'user' | 'moderator';
+    status: 'active' | 'inactive' | 'suspended';
+    lastLogin: string;
+    createdAt: string;
+    profileImage?: string;
+    department?: string;
+    studentId?: number;
+}
+
 export class UserService {
     private static instance: UserService;
 
     private constructor() { }
+    
+    private mapToUser(profile: UserProfile): User {
+        return {
+            id: profile.userId,
+            name: profile.name,
+            email: profile.email,
+            role: 'user',
+            status: 'active',
+            lastLogin: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            department: profile.major,
+            studentId: profile.studentId,
+            profileImage: profile.avatar,
+        };
+    }
 
     static getInstance(): UserService {
         if (!UserService.instance) {
@@ -25,9 +53,9 @@ export class UserService {
     /**
      * 모든 사용자 조회
      */
-    async getAllUsers(params?: UserSearchParams): Promise<UserProfile[]> {
+    async getAllUsers(params?: UserSearchParams): Promise<User[]> {
         try {
-            return await userRepository.findAll({
+            const profiles: UserProfile[] = await userRepository.findAll({
                 page: params?.page,
                 limit: params?.limit,
                 filter: {
@@ -36,6 +64,7 @@ export class UserService {
                     grade: params?.grade,
                 },
             });
+            return profiles.map((p) => this.mapToUser(p));
         } catch (error) {
             console.error('Failed to get all users:', error);
             throw new ApiError(
@@ -48,15 +77,10 @@ export class UserService {
     /**
      * 사용자 ID로 조회
      */
-    async getUserById(id: number): Promise<UserProfile> {
-        const user = await userRepository.findById(id);
-        if (!user) {
-            throw new ApiError(
-                ErrorCode.NOT_FOUND,
-                '사용자를 찾을 수 없습니다.'
-            );
-        }
-        return user;
+    async getUserById(id: number): Promise<User> {
+        const profile = await userRepository.findById(id);
+        if (!profile) throw new Error('사용자를 찾을 수 없습니다.');
+        return this.mapToUser(profile);
     }
 
     /**
@@ -188,11 +212,10 @@ export class UserService {
     /**
      * 사용자 검색
      */
-    async searchUsers(query: string): Promise<UserProfile[]> {
+    async searchUsers(query: string): Promise<User[]> {
         if (!query || query.trim().length < 2) {
             return [];
         }
-
         try {
             return await this.getAllUsers({ query });
         } catch (error) {
@@ -204,7 +227,7 @@ export class UserService {
     /**
      * 전공별 사용자 조회
      */
-    async getUsersByMajor(major: string): Promise<UserProfile[]> {
+    async getUsersByMajor(major: string): Promise<User[]> {
         try {
             return await this.getAllUsers({ major });
         } catch (error) {
@@ -216,7 +239,7 @@ export class UserService {
     /**
      * 학년별 사용자 조회
      */
-    async getUsersByGrade(grade: number): Promise<UserProfile[]> {
+    async getUsersByGrade(grade: number): Promise<User[]> {
         if (grade < 1 || grade > 6) {
             throw new ApiError(
                 ErrorCode.VALIDATION_ERROR,
