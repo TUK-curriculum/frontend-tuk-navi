@@ -147,6 +147,7 @@ export interface GenerateTimetablesResult {
   timetables: GeneratedSchedule[];
   avoidFailedReasons: string[];
   isAvoidFailed: "Y" | "N";
+  notFound: string[];
 }
 
 // ===== 통합 API 서비스 클래스 =====
@@ -603,6 +604,7 @@ class ApiService {
           hasMore: boolean;
           avoid_failed_reasons?: string[];
           is_avoid_failed: "Y" | "N";
+          not_found: string[];
         }>
       >("/timetable/generate", {
         curriculumId,
@@ -618,12 +620,14 @@ class ApiService {
         timetables = [],
         avoid_failed_reasons: avoidFailedReasons = [],
         is_avoid_failed: isAvoidFailed = "N",
+        not_found: notFound = [],
       } = response.data.data;
 
       return {
         timetables,
         avoidFailedReasons,
         isAvoidFailed,
+        notFound,
       };
     } catch (error) {
       console.error("[ApiService] Failed to generate timetables:", error);
@@ -631,6 +635,7 @@ class ApiService {
         timetables: [],
         avoidFailedReasons: [],
         isAvoidFailed: "N",
+        notFound: []
       };
     }
   }

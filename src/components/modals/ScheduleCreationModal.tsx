@@ -89,6 +89,7 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({ open, onC
   const [professorDialogOpen, setProfessorDialogOpen] = useState(false);
   const [pendingSchedule, setPendingSchedule] = useState<GeneratedSchedule | null>(null);
   const [avoidFailedReasons, setAvoidFailedReasons] = useState<string[]>([]);
+  const [notFoundLectures, setNotFoundLectures] = useState<string[]>([]);
 
   const avoidReasonLabels: Record<string, string> = {
     max_consecutive_hours: "하루 최대 연강 시간",
@@ -189,10 +190,11 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({ open, onC
     setAvoidFailedReasons([]);
 
     try {
-      const { timetables, avoidFailedReasons: reasons } = await apiService.generateTimetables(curriculumId, preferences, excludeGenerated);
+      const { timetables, avoidFailedReasons: reasons, notFound } = await apiService.generateTimetables(curriculumId, preferences, excludeGenerated);
 
       setGeneratedSchedules(timetables);
       setAvoidFailedReasons(reasons);
+      setNotFoundLectures(notFound || []);
       const newExcludeIds = timetables
         .map((t: GeneratedSchedule) => (t?.id != null ? String(t.id) : null))
         .filter((id: string | null): id is string => Boolean(id));
@@ -473,9 +475,10 @@ const ScheduleCreationModal: React.FC<ScheduleCreationModalProps> = ({ open, onC
           <AutoMode />
           커리큘럼 시간표 자동 생성
         </Box>
-        {hasAvoidFailures && (
+        {(hasAvoidFailures || notFoundLectures.length > 0) && (
           <Typography variant="body2" sx={{ color: "warning.main" }}>
-            설정한 조건과 불일치한 결과가 포함될 수 있습니다. 반영되지 않은 조건: {avoidFailedMessages.join(", ")}
+            설정한 조건과 불일치한 결과가 포함될 수 있습니다. 반영되지 않은 조건:{" "}
+    {[...avoidFailedMessages, ...notFoundLectures].join(", ")}
           </Typography>
         )}
       </DialogTitle>
